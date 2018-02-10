@@ -20,13 +20,13 @@ use ty::outlives::Component;
 use ty::subst::{Kind, Substs};
 use util::nodemap::DefIdMap;
 
-pub type AnonTypeMap<'tcx> = DefIdMap<AnonTypeDecl<'tcx>>;
+pub(crate) type AnonTypeMap<'tcx> = DefIdMap<AnonTypeDecl<'tcx>>;
 
 /// Information about the anonymous, abstract types whose values we
 /// are inferring in this function (these are the `impl Trait` that
 /// appear in the return type).
 #[derive(Copy, Clone, Debug)]
-pub struct AnonTypeDecl<'tcx> {
+pub(crate) struct AnonTypeDecl<'tcx> {
     /// The substitutions that we apply to the abstract that that this
     /// `impl Trait` desugars to. e.g., if:
     ///
@@ -38,7 +38,7 @@ pub struct AnonTypeDecl<'tcx> {
     ///     fn foo<'a, 'b, T>() -> Foo<'a, T>
     ///
     /// then `substs` would be `['a, T]`.
-    pub substs: &'tcx Substs<'tcx>,
+    pub(crate) substs: &'tcx Substs<'tcx>,
 
     /// The type variable that represents the value of the abstract type
     /// that we require. In other words, after we compile this function,
@@ -52,7 +52,7 @@ pub struct AnonTypeDecl<'tcx> {
     /// those that are arguments to `Foo` in the constraint above. (In
     /// other words, `?C` should not include `'b`, even though it's a
     /// lifetime parameter on `foo`.)
-    pub concrete_ty: Ty<'tcx>,
+    pub(crate) concrete_ty: Ty<'tcx>,
 
     /// True if the `impl Trait` bounds include region bounds.
     /// For example, this would be true for:
@@ -75,7 +75,7 @@ pub struct AnonTypeDecl<'tcx> {
     /// something from `substs` (or, at minimum, things that outlive
     /// the fn body). (Ultimately, writeback is responsible for this
     /// check.)
-    pub has_required_region_bounds: bool,
+    pub(crate) has_required_region_bounds: bool,
 }
 
 impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
@@ -104,7 +104,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// - `param_env` -- the in-scope parameter environment to be used for
     ///   obligations
     /// - `value` -- the value within which we are instantiating anon types
-    pub fn instantiate_anon_types<T: TypeFoldable<'tcx>>(
+    pub(crate) fn instantiate_anon_types<T: TypeFoldable<'tcx>>(
         &self,
         parent_def_id: DefId,
         body_id: ast::NodeId,
@@ -271,7 +271,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// - `anon_types` -- the map produced by `instantiate_anon_types`
     /// - `free_region_relations` -- something that can be used to relate
     ///   the free regions (`'a`) that appear in the impl trait.
-    pub fn constrain_anon_types<FRR: FreeRegionRelations<'tcx>>(
+    pub(crate) fn constrain_anon_types<FRR: FreeRegionRelations<'tcx>>(
         &self,
         anon_types: &AnonTypeMap<'tcx>,
         free_region_relations: &FRR,
@@ -428,7 +428,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// - `anon_defn`, the anonymous definition created in `instantiate_anon_types`
     /// - `instantiated_ty`, the inferred type C1 -- fully resolved, lifted version of
     ///   `anon_defn.concrete_ty`
-    pub fn infer_anon_definition_from_instantiation(
+    pub(crate) fn infer_anon_definition_from_instantiation(
         &self,
         def_id: DefId,
         anon_defn: &AnonTypeDecl<'tcx>,
@@ -536,8 +536,8 @@ impl<'a, 'gcx, 'tcx> Instantiator<'a, 'gcx, 'tcx> {
                     //
                     // ```rust
                     // mod a {
-                    //   pub abstract type Foo: Iterator;
-                    //   pub fn make_foo() -> Foo { .. }
+                    //   pub(crate) abstract type Foo: Iterator;
+                    //   pub(crate) fn make_foo() -> Foo { .. }
                     // }
                     //
                     // mod b {

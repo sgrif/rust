@@ -38,7 +38,7 @@
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "https://doc.rust-lang.org/favicon.ico",
        html_root_url = "https://doc.rust-lang.org/nightly/")]
-#![deny(warnings)]
+// #![deny(warnings)] FIXME: DONT COMMIT THIS SEAN
 
 #![feature(box_patterns)]
 #![feature(box_syntax)]
@@ -110,50 +110,50 @@ mod macros;
 
 // NB: This module needs to be declared first so diagnostics are
 // registered before they are used.
-pub mod diagnostics;
+pub(crate) mod diagnostics;
 
-pub mod cfg;
-pub mod dep_graph;
+pub(crate) mod cfg;
+pub(crate) mod dep_graph;
 pub mod hir;
-pub mod ich;
-pub mod infer;
-pub mod lint;
+pub(crate) mod ich;
+pub(crate) mod infer;
+pub(crate) mod lint;
 
-pub mod middle {
-    pub mod allocator;
-    pub mod borrowck;
-    pub mod expr_use_visitor;
-    pub mod const_val;
-    pub mod cstore;
-    pub mod dataflow;
-    pub mod dead;
-    pub mod dependency_format;
-    pub mod entry;
-    pub mod exported_symbols;
-    pub mod free_region;
-    pub mod intrinsicck;
-    pub mod lang_items;
-    pub mod liveness;
-    pub mod mem_categorization;
-    pub mod privacy;
-    pub mod reachable;
-    pub mod region;
-    pub mod recursion_limit;
-    pub mod resolve_lifetime;
-    pub mod stability;
-    pub mod weak_lang_items;
+pub(crate) mod middle {
+    pub(crate) mod allocator;
+    pub(crate) mod borrowck;
+    pub(crate) mod expr_use_visitor;
+    pub(crate) mod const_val;
+    pub(crate) mod cstore;
+    pub(crate) mod dataflow;
+    pub(crate) mod dead;
+    pub(crate) mod dependency_format;
+    pub(crate) mod entry;
+    pub(crate) mod exported_symbols;
+    pub(crate) mod free_region;
+    pub(crate) mod intrinsicck;
+    pub(crate) mod lang_items;
+    pub(crate) mod liveness;
+    pub(crate) mod mem_categorization;
+    pub(crate) mod privacy;
+    pub(crate) mod reachable;
+    pub(crate) mod region;
+    pub(crate) mod recursion_limit;
+    pub(crate) mod resolve_lifetime;
+    pub(crate) mod stability;
+    pub(crate) mod weak_lang_items;
 }
 
-pub mod mir;
+pub(crate) mod mir;
 pub mod session;
-pub mod traits;
+pub(crate) mod traits;
 pub mod ty;
 
-pub mod util {
-    pub mod common;
-    pub mod ppaux;
-    pub mod nodemap;
-    pub mod fs;
+pub(crate) mod util {
+    pub(crate) mod common;
+    pub(crate) mod ppaux;
+    pub(crate) mod nodemap;
+    pub(crate) mod fs;
 }
 
 // A private module so that macro-expanded idents like
@@ -162,7 +162,7 @@ pub mod util {
 // `libstd` uses the same trick.
 #[doc(hidden)]
 mod rustc {
-    pub use lint;
+    pub(crate) use lint;
 }
 
 // FIXME(#27438): right now the unit tests of librustc don't refer to any actual

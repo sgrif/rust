@@ -31,13 +31,13 @@ use hir::print as pprust;
 
 
 #[derive(Copy, Clone, Debug)]
-pub enum EntryOrExit {
+pub(crate) enum EntryOrExit {
     Entry,
     Exit,
 }
 
 #[derive(Clone)]
-pub struct DataFlowContext<'a, 'tcx: 'a, O> {
+pub(crate) struct DataFlowContext<'a, 'tcx: 'a, O> {
     tcx: TyCtxt<'a, 'tcx, 'tcx>,
 
     /// a name for the analysis using this dataflow instance
@@ -80,13 +80,13 @@ pub struct DataFlowContext<'a, 'tcx: 'a, O> {
     on_entry: Vec<usize>,
 }
 
-pub trait BitwiseOperator {
+pub(crate) trait BitwiseOperator {
     /// Joins two predecessor bits together, typically either `|` or `&`
     fn join(&self, succ: usize, pred: usize) -> usize;
 }
 
 /// Parameterization for the precise form of data flow that is used.
-pub trait DataFlowOperator : BitwiseOperator {
+pub(crate) trait DataFlowOperator : BitwiseOperator {
     /// Specifies the initial value for each bit in the `on_entry` set
     fn initial_value(&self) -> bool;
 }
@@ -221,7 +221,7 @@ fn build_local_id_to_index(body: Option<&hir::Body>,
 /// question, or if the kill's effect is associated with any
 /// control-flow directly through or indirectly over the node.
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum KillFrom {
+pub(crate) enum KillFrom {
     /// A `ScopeEnd` kill is one that takes effect when any control
     /// flow goes over the node. A kill associated with the end of the
     /// scope of a variable declaration `let x;` is an example of a
@@ -236,7 +236,7 @@ pub enum KillFrom {
 }
 
 impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
-    pub fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                analysis_name: &'static str,
                body: Option<&hir::Body>,
                cfg: &cfg::CFG,
@@ -277,7 +277,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
         }
     }
 
-    pub fn add_gen(&mut self, id: hir::ItemLocalId, bit: usize) {
+    pub(crate) fn add_gen(&mut self, id: hir::ItemLocalId, bit: usize) {
         //! Indicates that `id` generates `bit`
         debug!("{} add_gen(id={:?}, bit={})",
                self.analysis_name, id, bit);
@@ -292,7 +292,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
         }
     }
 
-    pub fn add_kill(&mut self, kind: KillFrom, id: hir::ItemLocalId, bit: usize) {
+    pub(crate) fn add_kill(&mut self, kind: KillFrom, id: hir::ItemLocalId, bit: usize) {
         //! Indicates that `id` kills `bit`
         debug!("{} add_kill(id={:?}, bit={})",
                self.analysis_name, id, bit);
@@ -343,7 +343,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
     }
 
 
-    pub fn each_bit_on_entry<F>(&self, id: hir::ItemLocalId, mut f: F) -> bool where
+    pub(crate) fn each_bit_on_entry<F>(&self, id: hir::ItemLocalId, mut f: F) -> bool where
         F: FnMut(usize) -> bool,
     {
         //! Iterates through each bit that is set on entry to `id`.
@@ -360,7 +360,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
         return true;
     }
 
-    pub fn each_bit_for_node<F>(&self, e: EntryOrExit, cfgidx: CFGIndex, f: F) -> bool where
+    pub(crate) fn each_bit_for_node<F>(&self, e: EntryOrExit, cfgidx: CFGIndex, f: F) -> bool where
         F: FnMut(usize) -> bool,
     {
         //! Iterates through each bit that is set on entry/exit to `cfgidx`.
@@ -389,7 +389,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
         self.each_bit(slice, f)
     }
 
-    pub fn each_gen_bit<F>(&self, id: hir::ItemLocalId, mut f: F) -> bool where
+    pub(crate) fn each_gen_bit<F>(&self, id: hir::ItemLocalId, mut f: F) -> bool where
         F: FnMut(usize) -> bool,
     {
         //! Iterates through each bit in the gen set for `id`.
@@ -452,7 +452,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
         return true;
     }
 
-    pub fn add_kills_from_flow_exits(&mut self, cfg: &cfg::CFG) {
+    pub(crate) fn add_kills_from_flow_exits(&mut self, cfg: &cfg::CFG) {
         //! Whenever you have a `break` or `continue` statement, flow
         //! exits through any number of enclosing scopes on its way to
         //! the new destination. This function infers the kill bits of
@@ -513,7 +513,7 @@ impl<'a, 'tcx, O:DataFlowOperator> DataFlowContext<'a, 'tcx, O> {
 
 impl<'a, 'tcx, O:DataFlowOperator+Clone+'static> DataFlowContext<'a, 'tcx, O> {
 //                                ^^^^^^^^^^^^^ only needed for pretty printing
-    pub fn propagate(&mut self, cfg: &cfg::CFG, body: &hir::Body) {
+    pub(crate) fn propagate(&mut self, cfg: &cfg::CFG, body: &hir::Body) {
         //! Performs the data flow analysis.
 
         if self.bits_per_id == 0 {

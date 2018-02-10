@@ -20,13 +20,13 @@ use syntax::ast::NodeId;
 
 // Accessibility levels, sorted in ascending order
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum AccessLevel {
+pub(crate) enum AccessLevel {
     // Exported items + items participating in various kinds of public interfaces,
     // but not directly nameable. For example, if function `fn f() -> T {...}` is
     // public, then type `T` is reachable. Its values can be obtained by other crates
     // even if the type itself is not nameable.
     Reachable,
-    // Public items + items accessible to other crates with help of `pub use` re-exports
+    // Public items + items accessible to other crates with help of `pub(crate) use` re-exports
     Exported,
     // Items accessible to other crates directly, without help of re-exports
     Public,
@@ -34,18 +34,18 @@ pub enum AccessLevel {
 
 // Accessibility levels for reachable HIR nodes
 #[derive(Clone)]
-pub struct AccessLevels<Id = NodeId> {
-    pub map: FxHashMap<Id, AccessLevel>
+pub(crate) struct AccessLevels<Id = NodeId> {
+    pub(crate) map: FxHashMap<Id, AccessLevel>
 }
 
 impl<Id: Hash + Eq> AccessLevels<Id> {
-    pub fn is_reachable(&self, id: Id) -> bool {
+    pub(crate) fn is_reachable(&self, id: Id) -> bool {
         self.map.contains_key(&id)
     }
-    pub fn is_exported(&self, id: Id) -> bool {
+    pub(crate) fn is_exported(&self, id: Id) -> bool {
         self.map.get(&id) >= Some(&AccessLevel::Exported)
     }
-    pub fn is_public(&self, id: Id) -> bool {
+    pub(crate) fn is_public(&self, id: Id) -> bool {
         self.map.get(&id) >= Some(&AccessLevel::Public)
     }
 }
@@ -64,4 +64,4 @@ impl<Id: Hash + Eq + fmt::Debug> fmt::Debug for AccessLevels<Id> {
 
 /// A set containing all exported definitions from external crates.
 /// The set does not contain any entries from local crates.
-pub type ExternalExports = DefIdSet;
+pub(crate) type ExternalExports = DefIdSet;

@@ -55,7 +55,7 @@ graphs will be printed.                                                     \n\
 ");
 }
 
-pub fn maybe_print_constraints_for<'a, 'gcx, 'tcx>(
+pub(crate) fn maybe_print_constraints_for<'a, 'gcx, 'tcx>(
     region_data: &RegionConstraintData<'tcx>,
     region_rels: &RegionRelations<'a, 'gcx, 'tcx>)
 {
@@ -264,7 +264,7 @@ impl<'a, 'gcx, 'tcx> dot::GraphWalk<'a> for ConstraintGraph<'a, 'gcx, 'tcx> {
     }
 }
 
-pub type ConstraintMap<'tcx> = BTreeMap<Constraint<'tcx>, SubregionOrigin<'tcx>>;
+pub(crate) type ConstraintMap<'tcx> = BTreeMap<Constraint<'tcx>, SubregionOrigin<'tcx>>;
 
 fn dump_region_data_to<'a, 'gcx, 'tcx>(region_rels: &RegionRelations<'a, 'gcx, 'tcx>,
                                        map: &ConstraintMap<'tcx>,

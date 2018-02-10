@@ -12,7 +12,7 @@ use super::graph::CurrentDepGraph;
 
 use std::cell::RefCell;
 
-pub struct IgnoreTask<'graph> {
+pub(crate) struct IgnoreTask<'graph> {
     graph: &'graph RefCell<CurrentDepGraph>,
 }
 

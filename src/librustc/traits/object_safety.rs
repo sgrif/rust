@@ -28,7 +28,7 @@ use std::borrow::Cow;
 use syntax::ast;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ObjectSafetyViolation {
+pub(crate) enum ObjectSafetyViolation {
     /// Self : Sized declared on the trait
     SizedSelf,
 
@@ -44,7 +44,7 @@ pub enum ObjectSafetyViolation {
 }
 
 impl ObjectSafetyViolation {
-    pub fn error_msg(&self) -> Cow<'static, str> {
+    pub(crate) fn error_msg(&self) -> Cow<'static, str> {
         match *self {
             ObjectSafetyViolation::SizedSelf =>
                 "the trait cannot require that `Self : Sized`".into(),
@@ -68,7 +68,7 @@ impl ObjectSafetyViolation {
 
 /// Reasons a method might not be object-safe.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum MethodViolationCode {
+pub(crate) enum MethodViolationCode {
     /// e.g., `fn foo()`
     StaticMethod,
 
@@ -88,7 +88,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// astconv - currently, Self in supertraits. This is needed
     /// because `object_safety_violations` can't be used during
     /// type collection.
-    pub fn astconv_object_safety_violations(self, trait_def_id: DefId)
+    pub(crate) fn astconv_object_safety_violations(self, trait_def_id: DefId)
                                             -> Vec<ObjectSafetyViolation>
     {
         let mut violations = vec![];
@@ -106,7 +106,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         violations
     }
 
-    pub fn object_safety_violations(self, trait_def_id: DefId)
+    pub(crate) fn object_safety_violations(self, trait_def_id: DefId)
                                     -> Vec<ObjectSafetyViolation>
     {
         traits::supertrait_def_ids(self, trait_def_id)
@@ -237,7 +237,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// object.  Note that object-safe traits can have some
     /// non-vtable-safe methods, so long as they require `Self:Sized` or
     /// otherwise ensure that they cannot be used when `Self=Trait`.
-    pub fn is_vtable_safe_method(self,
+    pub(crate) fn is_vtable_safe_method(self,
                                  trait_def_id: DefId,
                                  method: &ty::AssociatedItem)
                                  -> bool

@@ -19,7 +19,7 @@
 //
 // * Functions called by the compiler itself.
 
-pub use self::LangItem::*;
+pub(crate) use self::LangItem::*;
 
 use hir::def_id::DefId;
 use ty::{self, TyCtxt};
@@ -42,7 +42,7 @@ macro_rules! language_item_table {
 
 enum_from_u32! {
     #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
-    pub enum LangItem {
+    pub(crate) enum LangItem {
         $($variant,)*
     }
 }
@@ -55,13 +55,13 @@ impl LangItem {
     }
 }
 
-pub struct LanguageItems {
-    pub items: Vec<Option<DefId>>,
-    pub missing: Vec<LangItem>,
+pub(crate) struct LanguageItems {
+    pub(crate) items: Vec<Option<DefId>>,
+    pub(crate) missing: Vec<LangItem>,
 }
 
 impl LanguageItems {
-    pub fn new() -> LanguageItems {
+    pub(crate) fn new() -> LanguageItems {
         fn foo(_: LangItem) -> Option<DefId> { None }
 
         LanguageItems {
@@ -70,15 +70,15 @@ impl LanguageItems {
         }
     }
 
-    pub fn items(&self) -> &[Option<DefId>] {
+    pub(crate) fn items(&self) -> &[Option<DefId>] {
         &*self.items
     }
 
-    pub fn require(&self, it: LangItem) -> Result<DefId, String> {
+    pub(crate) fn require(&self, it: LangItem) -> Result<DefId, String> {
         self.items[it as usize].ok_or_else(|| format!("requires `{}` lang_item", it.name()))
     }
 
-    pub fn fn_trait_kind(&self, id: DefId) -> Option<ty::ClosureKind> {
+    pub(crate) fn fn_trait_kind(&self, id: DefId) -> Option<ty::ClosureKind> {
         match Some(id) {
             x if x == self.fn_trait() => Some(ty::ClosureKind::Fn),
             x if x == self.fn_mut_trait() => Some(ty::ClosureKind::FnMut),
@@ -89,7 +89,7 @@ impl LanguageItems {
 
     $(
         #[allow(dead_code)]
-        pub fn $method(&self) -> Option<DefId> {
+        pub(crate) fn $method(&self) -> Option<DefId> {
             self.items[$variant as usize]
         }
     )*
@@ -179,7 +179,7 @@ impl<'a, 'tcx> LanguageItemCollector<'a, 'tcx> {
     }
 }
 
-pub fn extract(attrs: &[ast::Attribute]) -> Option<(Symbol, Span)> {
+pub(crate) fn extract(attrs: &[ast::Attribute]) -> Option<(Symbol, Span)> {
     for attribute in attrs {
         if attribute.check_name("lang") {
             if let Some(value) = attribute.value_str() {
@@ -191,7 +191,7 @@ pub fn extract(attrs: &[ast::Attribute]) -> Option<(Symbol, Span)> {
     return None;
 }
 
-pub fn collect<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) -> LanguageItems {
+pub(crate) fn collect<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) -> LanguageItems {
     let mut collector = LanguageItemCollector::new(tcx);
     for &cnum in tcx.crates().iter() {
         for &(def_id, item_index) in tcx.defined_lang_items(cnum).iter() {
@@ -345,7 +345,7 @@ language_item_table! {
 }
 
 impl<'a, 'tcx, 'gcx> TyCtxt<'a, 'tcx, 'gcx> {
-    pub fn require_lang_item(&self, lang_item: LangItem) -> DefId {
+    pub(crate) fn require_lang_item(&self, lang_item: LangItem) -> DefId {
         self.lang_items().require(lang_item).unwrap_or_else(|msg| {
             self.sess.fatal(&msg)
         })

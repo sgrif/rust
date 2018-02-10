@@ -20,7 +20,7 @@ use ty::{self, Ty, TyCtxt};
 
 use self::SimplifiedTypeGen::*;
 
-pub type SimplifiedType = SimplifiedTypeGen<DefId>;
+pub(crate) type SimplifiedType = SimplifiedTypeGen<DefId>;
 
 /// See `simplify_type`
 ///
@@ -29,7 +29,7 @@ pub type SimplifiedType = SimplifiedTypeGen<DefId>;
 /// keys (in which case we use a DefPathHash as id-type) but in the general case
 /// the non-stable but fast to construct DefId-version is the better choice.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SimplifiedTypeGen<D>
+pub(crate) enum SimplifiedTypeGen<D>
     where D: Copy + Debug + Ord + Eq + Hash
 {
     BoolSimplifiedType,
@@ -62,7 +62,7 @@ pub enum SimplifiedTypeGen<D>
 /// then we can't say much about whether two types would unify. Put another way,
 /// `can_simplify_params` should be true if type parameters appear free in `ty` and `false` if they
 /// are to be considered bound.
-pub fn simplify_type<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn simplify_type<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                      ty: Ty,
                                      can_simplify_params: bool)
                                      -> Option<SimplifiedType>
@@ -126,7 +126,7 @@ pub fn simplify_type<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
 }
 
 impl<D: Copy + Debug + Ord + Eq + Hash> SimplifiedTypeGen<D> {
-    pub fn map_def<U, F>(self, map: F) -> SimplifiedTypeGen<U>
+    pub(crate) fn map_def<U, F>(self, map: F) -> SimplifiedTypeGen<U>
         where F: Fn(D) -> U,
               U: Copy + Debug + Ord + Eq + Hash,
     {

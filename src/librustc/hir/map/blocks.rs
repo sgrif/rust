@@ -88,7 +88,7 @@ impl<'a> Code<'a> {
     }
 
     /// Attempts to construct a Code from presumed FnLike or Expr node input.
-    pub fn from_node(map: &map::Map<'a>, id: NodeId) -> Option<Code<'a>> {
+    pub(crate) fn from_node(map: &map::Map<'a>, id: NodeId) -> Option<Code<'a>> {
         match map.get(id) {
             map::NodeBlock(_) => {
                 //  Use the parent, hopefully an expression node.

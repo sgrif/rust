@@ -111,7 +111,7 @@ pub enum NestedVisitorMap<'this, 'tcx: 'this> {
 impl<'this, 'tcx> NestedVisitorMap<'this, 'tcx> {
     /// Returns the map to use for an "intra item-like" thing (if any).
     /// e.g., function body.
-    pub fn intra(self) -> Option<&'this Map<'tcx>> {
+    pub(crate) fn intra(self) -> Option<&'this Map<'tcx>> {
         match self {
             NestedVisitorMap::None => None,
             NestedVisitorMap::OnlyBodies(map) => Some(map),
@@ -121,7 +121,7 @@ impl<'this, 'tcx> NestedVisitorMap<'this, 'tcx> {
 
     /// Returns the map to use for an "item-like" thing (if any).
     /// e.g., item, impl-item.
-    pub fn inter(self) -> Option<&'this Map<'tcx>> {
+    pub(crate) fn inter(self) -> Option<&'this Map<'tcx>> {
         match self {
             NestedVisitorMap::None => None,
             NestedVisitorMap::OnlyBodies(_) => None,
@@ -1134,7 +1134,7 @@ pub struct IdRangeComputingVisitor<'a, 'hir: 'a> {
 }
 
 impl<'a, 'hir> IdRangeComputingVisitor<'a, 'hir> {
-    pub fn new(map: &'a map::Map<'hir>) -> IdRangeComputingVisitor<'a, 'hir> {
+    pub(crate) fn new(map: &'a map::Map<'hir>) -> IdRangeComputingVisitor<'a, 'hir> {
         IdRangeComputingVisitor { result: IdRange::max(), map: map }
     }
 

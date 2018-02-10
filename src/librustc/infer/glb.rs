@@ -19,13 +19,13 @@ use ty::error::TypeError;
 use ty::relate::{Relate, RelateResult, TypeRelation};
 
 /// "Greatest lower bound" (common subtype)
-pub struct Glb<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
+pub(crate) struct Glb<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
     fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>,
     a_is_expected: bool,
 }
 
 impl<'combine, 'infcx, 'gcx, 'tcx> Glb<'combine, 'infcx, 'gcx, 'tcx> {
-    pub fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
+    pub(crate) fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
         -> Glb<'combine, 'infcx, 'gcx, 'tcx>
     {
         Glb { fields: fields, a_is_expected: a_is_expected }

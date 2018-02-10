@@ -27,14 +27,14 @@ use syntax::abi;
 use hir as ast;
 use rustc_data_structures::accumulate_vec::AccumulateVec;
 
-pub type RelateResult<'tcx, T> = Result<T, TypeError<'tcx>>;
+pub(crate) type RelateResult<'tcx, T> = Result<T, TypeError<'tcx>>;
 
 #[derive(Clone, Debug)]
-pub enum Cause {
+pub(crate) enum Cause {
     ExistentialRegionBound, // relating an existential region bound
 }
 
-pub trait TypeRelation<'a, 'gcx: 'a+'tcx, 'tcx: 'a> : Sized {
+pub(crate) trait TypeRelation<'a, 'gcx: 'a+'tcx, 'tcx: 'a> : Sized {
     fn tcx(&self) -> TyCtxt<'a, 'gcx, 'tcx>;
 
     /// Returns a static string we can use for printouts.
@@ -97,7 +97,7 @@ pub trait TypeRelation<'a, 'gcx: 'a+'tcx, 'tcx: 'a> : Sized {
         where T: Relate<'tcx>;
 }
 
-pub trait Relate<'tcx>: TypeFoldable<'tcx> {
+pub(crate) trait Relate<'tcx>: TypeFoldable<'tcx> {
     fn relate<'a, 'gcx, R>(relation: &mut R, a: &Self, b: &Self)
                            -> RelateResult<'tcx, Self>
         where R: TypeRelation<'a, 'gcx, 'tcx>, 'gcx: 'a+'tcx, 'tcx: 'a;
@@ -131,7 +131,7 @@ impl<'tcx> Relate<'tcx> for ty::TypeAndMut<'tcx> {
     }
 }
 
-pub fn relate_substs<'a, 'gcx, 'tcx, R>(relation: &mut R,
+pub(crate) fn relate_substs<'a, 'gcx, 'tcx, R>(relation: &mut R,
                                         variances: Option<&Vec<ty::Variance>>,
                                         a_subst: &'tcx Substs<'tcx>,
                                         b_subst: &'tcx Substs<'tcx>)
@@ -361,7 +361,7 @@ impl<'tcx> Relate<'tcx> for Ty<'tcx> {
 /// The main "type relation" routine. Note that this does not handle
 /// inference artifacts, so you should filter those out before calling
 /// it.
-pub fn super_relate_tys<'a, 'gcx, 'tcx, R>(relation: &mut R,
+pub(crate) fn super_relate_tys<'a, 'gcx, 'tcx, R>(relation: &mut R,
                                            a: Ty<'tcx>,
                                            b: Ty<'tcx>)
                                            -> RelateResult<'tcx, Ty<'tcx>>
@@ -682,7 +682,7 @@ impl<'tcx, T: Relate<'tcx>> Relate<'tcx> for Box<T> {
 ///////////////////////////////////////////////////////////////////////////
 // Error handling
 
-pub fn expected_found<'a, 'gcx, 'tcx, R, T>(relation: &mut R,
+pub(crate) fn expected_found<'a, 'gcx, 'tcx, R, T>(relation: &mut R,
                                             a: &T,
                                             b: &T)
                                             -> ExpectedFound<T>
@@ -691,7 +691,7 @@ pub fn expected_found<'a, 'gcx, 'tcx, R, T>(relation: &mut R,
     expected_found_bool(relation.a_is_expected(), a, b)
 }
 
-pub fn expected_found_bool<T>(a_is_expected: bool,
+pub(crate) fn expected_found_bool<T>(a_is_expected: bool,
                               a: &T,
                               b: &T)
                               -> ExpectedFound<T>

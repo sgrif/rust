@@ -45,26 +45,26 @@ use syntax::symbol::Symbol;
 use syntax_pos::Span;
 use rustc_back::target::Target;
 
-pub use self::NativeLibraryKind::*;
+pub(crate) use self::NativeLibraryKind::*;
 
 // lonely orphan structs and enums looking for a better home
 
 #[derive(Clone, Debug, Copy)]
-pub struct LinkMeta {
-    pub crate_hash: Svh,
+pub(crate) struct LinkMeta {
+    pub(crate) crate_hash: Svh,
 }
 
 /// Where a crate came from on the local filesystem. One of these three options
 /// must be non-None.
 #[derive(PartialEq, Clone, Debug)]
-pub struct CrateSource {
-    pub dylib: Option<(PathBuf, PathKind)>,
-    pub rlib: Option<(PathBuf, PathKind)>,
-    pub rmeta: Option<(PathBuf, PathKind)>,
+pub(crate) struct CrateSource {
+    pub(crate) dylib: Option<(PathBuf, PathKind)>,
+    pub(crate) rlib: Option<(PathBuf, PathKind)>,
+    pub(crate) rmeta: Option<(PathBuf, PathKind)>,
 }
 
 #[derive(RustcEncodable, RustcDecodable, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
-pub enum DepKind {
+pub(crate) enum DepKind {
     /// A dependency that is only used for its macros, none of which are visible from other crates.
     /// These are included in the metadata only as placeholders and are ignored when decoding.
     UnexportedMacrosOnly,
@@ -79,7 +79,7 @@ pub enum DepKind {
 }
 
 impl DepKind {
-    pub fn macros_only(self) -> bool {
+    pub(crate) fn macros_only(self) -> bool {
         match self {
             DepKind::UnexportedMacrosOnly | DepKind::MacrosOnly => true,
             DepKind::Implicit | DepKind::Explicit => false,
@@ -88,14 +88,14 @@ impl DepKind {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum LibSource {
+pub(crate) enum LibSource {
     Some(PathBuf),
     MetadataOnly,
     None,
 }
 
 impl LibSource {
-    pub fn is_some(&self) -> bool {
+    pub(crate) fn is_some(&self) -> bool {
         if let LibSource::Some(_) = *self {
             true
         } else {
@@ -103,7 +103,7 @@ impl LibSource {
         }
     }
 
-    pub fn option(&self) -> Option<PathBuf> {
+    pub(crate) fn option(&self) -> Option<PathBuf> {
         match *self {
             LibSource::Some(ref p) => Some(p.clone()),
             LibSource::MetadataOnly | LibSource::None => None,
@@ -112,13 +112,13 @@ impl LibSource {
 }
 
 #[derive(Copy, Debug, PartialEq, Clone, RustcEncodable, RustcDecodable)]
-pub enum LinkagePreference {
+pub(crate) enum LinkagePreference {
     RequireDynamic,
     RequireStatic,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, RustcEncodable, RustcDecodable)]
-pub enum NativeLibraryKind {
+pub(crate) enum NativeLibraryKind {
     /// native static library (.a archive)
     NativeStatic,
     /// native static library, which doesn't get bundled into .rlibs
@@ -130,45 +130,45 @@ pub enum NativeLibraryKind {
 }
 
 #[derive(Clone, Hash, RustcEncodable, RustcDecodable)]
-pub struct NativeLibrary {
-    pub kind: NativeLibraryKind,
-    pub name: Symbol,
-    pub cfg: Option<ast::MetaItem>,
-    pub foreign_items: Vec<DefId>,
+pub(crate) struct NativeLibrary {
+    pub(crate) kind: NativeLibraryKind,
+    pub(crate) name: Symbol,
+    pub(crate) cfg: Option<ast::MetaItem>,
+    pub(crate) foreign_items: Vec<DefId>,
 }
 
-pub enum LoadedMacro {
+pub(crate) enum LoadedMacro {
     MacroDef(ast::Item),
     ProcMacro(Rc<SyntaxExtension>),
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct ExternCrate {
+pub(crate) struct ExternCrate {
     /// def_id of an `extern crate` in the current crate that caused
     /// this crate to be loaded; note that there could be multiple
     /// such ids
-    pub def_id: DefId,
+    pub(crate) def_id: DefId,
 
     /// span of the extern crate that caused this to be loaded
-    pub span: Span,
+    pub(crate) span: Span,
 
     /// If true, then this crate is the crate named by the extern
     /// crate referenced above. If false, then this crate is a dep
     /// of the crate.
-    pub direct: bool,
+    pub(crate) direct: bool,
 
     /// Number of links to reach the extern crate `def_id`
     /// declaration; used to select the extern crate with the shortest
     /// path
-    pub path_len: usize,
+    pub(crate) path_len: usize,
 }
 
-pub struct EncodedMetadata {
-    pub raw_data: Vec<u8>
+pub(crate) struct EncodedMetadata {
+    pub(crate) raw_data: Vec<u8>
 }
 
 impl EncodedMetadata {
-    pub fn new() -> EncodedMetadata {
+    pub(crate) fn new() -> EncodedMetadata {
         EncodedMetadata {
             raw_data: Vec::new(),
         }
@@ -183,7 +183,7 @@ impl EncodedMetadata {
 /// At the time of this writing, there is only one backend and one way to store
 /// metadata in library -- this trait just serves to decouple rustc_metadata from
 /// the archive reader, which depends on LLVM.
-pub trait MetadataLoader {
+pub(crate) trait MetadataLoader {
     fn get_rlib_metadata(&self,
                          target: &Target,
                          filename: &Path)
@@ -195,23 +195,23 @@ pub trait MetadataLoader {
 }
 
 #[derive(Clone)]
-pub struct ExternConstBody<'tcx> {
-    pub body: &'tcx hir::Body,
+pub(crate) struct ExternConstBody<'tcx> {
+    pub(crate) body: &'tcx hir::Body,
 
     // It would require a lot of infrastructure to enable stable-hashing Bodies
     // from other crates, so we hash on export and just store the fingerprint
     // with them.
-    pub fingerprint: ich::Fingerprint,
+    pub(crate) fingerprint: ich::Fingerprint,
 }
 
 #[derive(Clone)]
-pub struct ExternBodyNestedBodies {
-    pub nested_bodies: Rc<BTreeMap<hir::BodyId, hir::Body>>,
+pub(crate) struct ExternBodyNestedBodies {
+    pub(crate) nested_bodies: Rc<BTreeMap<hir::BodyId, hir::Body>>,
 
     // It would require a lot of infrastructure to enable stable-hashing Bodies
     // from other crates, so we hash on export and just store the fingerprint
     // with them.
-    pub fingerprint: ich::Fingerprint,
+    pub(crate) fingerprint: ich::Fingerprint,
 }
 
 /// A store of Rust crates, through with their metadata
@@ -224,7 +224,7 @@ pub struct ExternBodyNestedBodies {
 /// that it's *not* tracked for dependency information throughout compilation
 /// (it'd break incremental compilation) and should only be called pre-HIR (e.g.
 /// during resolve)
-pub trait CrateStore {
+pub(crate) trait CrateStore {
     fn crate_data_as_rc_any(&self, krate: CrateNum) -> Rc<Any>;
 
     // access to the metadata loader
@@ -265,7 +265,7 @@ pub trait CrateStore {
 }
 
 // FIXME: find a better place for this?
-pub fn validate_crate_name(sess: Option<&Session>, s: &str, sp: Option<Span>) {
+pub(crate) fn validate_crate_name(sess: Option<&Session>, s: &str, sp: Option<Span>) {
     let mut err_count = 0;
     {
         let mut say = |s: &str| {
@@ -293,7 +293,7 @@ pub fn validate_crate_name(sess: Option<&Session>, s: &str, sp: Option<Span>) {
 
 /// A dummy crate store that does not support any non-local crates,
 /// for test purposes.
-pub struct DummyCrateStore;
+pub(crate) struct DummyCrateStore;
 
 #[allow(unused_variables)]
 impl CrateStore for DummyCrateStore {
@@ -354,7 +354,7 @@ impl CrateStore for DummyCrateStore {
     fn metadata_loader(&self) -> &MetadataLoader { bug!("metadata_loader") }
 }
 
-pub trait CrateLoader {
+pub(crate) trait CrateLoader {
     fn process_item(&mut self, item: &ast::Item, defs: &Definitions);
     fn postprocess(&mut self, krate: &ast::Crate);
     fn resolve_crate_from_path(&mut self, name: Symbol, span: Span) -> CrateNum;
@@ -369,7 +369,7 @@ pub trait CrateLoader {
 // In order to get this left-to-right dependency ordering, we perform a
 // topological sort of all crates putting the leaves at the right-most
 // positions.
-pub fn used_crates(tcx: TyCtxt, prefer: LinkagePreference)
+pub(crate) fn used_crates(tcx: TyCtxt, prefer: LinkagePreference)
     -> Vec<(CrateNum, LibSource)>
 {
     let mut libs = tcx.crates()

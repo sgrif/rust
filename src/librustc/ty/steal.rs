@@ -31,25 +31,25 @@ use std::mem;
 /// -- once the value is stolen -- it will never be read from again.
 ///
 /// FIXME(#41710) -- what is the best way to model linear queries?
-pub struct Steal<T> {
+pub(crate) struct Steal<T> {
     value: RefCell<Option<T>>
 }
 
 impl<T> Steal<T> {
-    pub fn new(value: T) -> Self {
+    pub(crate) fn new(value: T) -> Self {
         Steal {
             value: RefCell::new(Some(value))
         }
     }
 
-    pub fn borrow(&self) -> Ref<T> {
+    pub(crate) fn borrow(&self) -> Ref<T> {
         Ref::map(self.value.borrow(), |opt| match *opt {
             None => bug!("attempted to read from stolen value"),
             Some(ref v) => v
         })
     }
 
-    pub fn steal(&self) -> T {
+    pub(crate) fn steal(&self) -> T {
         let value_ref = &mut *self.value.borrow_mut();
         let value = mem::replace(value_ref, None);
         value.expect("attempt to read from stolen value")

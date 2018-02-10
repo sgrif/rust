@@ -12,7 +12,7 @@ use syntax::ast;
 use ty::{self, IntVarValue, Ty, TyCtxt};
 use rustc_data_structures::unify::{Combine, UnifyKey};
 
-pub trait ToType {
+pub(crate) trait ToType {
     fn to_type<'a, 'gcx, 'tcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>;
 }
 
@@ -28,7 +28,7 @@ pub struct RegionVidKey {
     /// The minimum region vid in the unification set. This is needed
     /// to have a canonical name for a type to prevent infinite
     /// recursion.
-    pub min_vid: ty::RegionVid
+    pub(crate) min_vid: ty::RegionVid
 }
 
 impl Combine for RegionVidKey {

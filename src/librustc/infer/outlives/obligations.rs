@@ -83,7 +83,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
     /// and later processed by regionck, when full type information is
     /// available (see `region_obligations` field for more
     /// information).
-    pub fn register_region_obligation(
+    pub(crate) fn register_region_obligation(
         &self,
         body_id: ast::NodeId,
         obligation: RegionObligation<'tcx>,
@@ -132,7 +132,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
     /// This function may have to perform normalizations, and hence it
     /// returns an `InferOk` with subobligations that must be
     /// processed.
-    pub fn process_registered_region_obligations(
+    pub(crate) fn process_registered_region_obligations(
         &self,
         region_bound_pairs: &[(ty::Region<'tcx>, GenericKind<'tcx>)],
         implicit_region_bound: Option<ty::Region<'tcx>>,
@@ -182,7 +182,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
 
     /// Processes a single ad-hoc region obligation that was not
     /// registered in advance.
-    pub fn type_must_outlive(
+    pub(crate) fn type_must_outlive(
         &self,
         region_bound_pairs: &[(ty::Region<'tcx>, GenericKind<'tcx>)],
         implicit_region_bound: Option<ty::Region<'tcx>>,

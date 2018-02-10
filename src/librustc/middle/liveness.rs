@@ -189,7 +189,7 @@ impl<'a, 'tcx> Visitor<'tcx> for IrMaps<'a, 'tcx> {
     fn visit_arm(&mut self, a: &'tcx hir::Arm) { visit_arm(self, a); }
 }
 
-pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     tcx.hir.krate().visit_all_item_likes(&mut IrMaps::new(tcx).as_deep_visitor());
     tcx.sess.abort_if_errors();
 }

@@ -40,7 +40,7 @@ struct LoopScope {
     break_index: CFGIndex,    // where to go on a `break`
 }
 
-pub fn construct<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+pub(crate) fn construct<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                            body: &hir::Body) -> CFG {
     let mut graph = graph::Graph::new();
     let entry = graph.add_node(CFGNodeData::Entry);

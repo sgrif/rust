@@ -28,9 +28,9 @@ use ty::subst::Substs;
 /// The shorthand encoding uses an enum's variant index `usize`
 /// and is offset by this value so it never matches a real variant.
 /// This offset is also chosen so that the first byte is never < 0x80.
-pub const SHORTHAND_OFFSET: usize = 0x80;
+pub(crate) const SHORTHAND_OFFSET: usize = 0x80;
 
-pub trait EncodableWithShorthand: Clone + Eq + Hash {
+pub(crate) trait EncodableWithShorthand: Clone + Eq + Hash {
     type Variant: Encodable;
     fn variant(&self) -> &Self::Variant;
 }
@@ -49,7 +49,7 @@ impl<'tcx> EncodableWithShorthand for ty::Predicate<'tcx> {
     }
 }
 
-pub trait TyEncoder: Encoder {
+pub(crate) trait TyEncoder: Encoder {
     fn position(&self) -> usize;
 }
 
@@ -61,7 +61,7 @@ impl<'buf> TyEncoder for opaque::Encoder<'buf> {
 }
 
 /// Encode the given value or a previously cached shorthand.
-pub fn encode_with_shorthand<E, T, M>(encoder: &mut E,
+pub(crate) fn encode_with_shorthand<E, T, M>(encoder: &mut E,
                                       value: &T,
                                       cache: M)
                                       -> Result<(), E::Error>
@@ -99,7 +99,7 @@ pub fn encode_with_shorthand<E, T, M>(encoder: &mut E,
     Ok(())
 }
 
-pub fn encode_predicates<'tcx, E, C>(encoder: &mut E,
+pub(crate) fn encode_predicates<'tcx, E, C>(encoder: &mut E,
                                      predicates: &ty::GenericPredicates<'tcx>,
                                      cache: C)
                                      -> Result<(), E::Error>
@@ -114,7 +114,7 @@ pub fn encode_predicates<'tcx, E, C>(encoder: &mut E,
     Ok(())
 }
 
-pub trait TyDecoder<'a, 'tcx: 'a>: Decoder {
+pub(crate) trait TyDecoder<'a, 'tcx: 'a>: Decoder {
 
     fn tcx(&self) -> TyCtxt<'a, 'tcx, 'tcx>;
 
@@ -139,7 +139,7 @@ pub trait TyDecoder<'a, 'tcx: 'a>: Decoder {
 }
 
 #[inline]
-pub fn decode_cnum<'a, 'tcx, D>(decoder: &mut D) -> Result<CrateNum, D::Error>
+pub(crate) fn decode_cnum<'a, 'tcx, D>(decoder: &mut D) -> Result<CrateNum, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
 {
@@ -148,7 +148,7 @@ pub fn decode_cnum<'a, 'tcx, D>(decoder: &mut D) -> Result<CrateNum, D::Error>
 }
 
 #[inline]
-pub fn decode_ty<'a, 'tcx, D>(decoder: &mut D) -> Result<Ty<'tcx>, D::Error>
+pub(crate) fn decode_ty<'a, 'tcx, D>(decoder: &mut D) -> Result<Ty<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
 {
@@ -168,7 +168,7 @@ pub fn decode_ty<'a, 'tcx, D>(decoder: &mut D) -> Result<Ty<'tcx>, D::Error>
 }
 
 #[inline]
-pub fn decode_predicates<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_predicates<'a, 'tcx, D>(decoder: &mut D)
                                       -> Result<ty::GenericPredicates<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
@@ -192,7 +192,7 @@ pub fn decode_predicates<'a, 'tcx, D>(decoder: &mut D)
 }
 
 #[inline]
-pub fn decode_substs<'a, 'tcx, D>(decoder: &mut D) -> Result<&'tcx Substs<'tcx>, D::Error>
+pub(crate) fn decode_substs<'a, 'tcx, D>(decoder: &mut D) -> Result<&'tcx Substs<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
 {
@@ -202,7 +202,7 @@ pub fn decode_substs<'a, 'tcx, D>(decoder: &mut D) -> Result<&'tcx Substs<'tcx>,
 }
 
 #[inline]
-pub fn decode_region<'a, 'tcx, D>(decoder: &mut D) -> Result<ty::Region<'tcx>, D::Error>
+pub(crate) fn decode_region<'a, 'tcx, D>(decoder: &mut D) -> Result<ty::Region<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
 {
@@ -210,7 +210,7 @@ pub fn decode_region<'a, 'tcx, D>(decoder: &mut D) -> Result<ty::Region<'tcx>, D
 }
 
 #[inline]
-pub fn decode_ty_slice<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_ty_slice<'a, 'tcx, D>(decoder: &mut D)
                                     -> Result<&'tcx ty::Slice<Ty<'tcx>>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
@@ -220,7 +220,7 @@ pub fn decode_ty_slice<'a, 'tcx, D>(decoder: &mut D)
 }
 
 #[inline]
-pub fn decode_adt_def<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_adt_def<'a, 'tcx, D>(decoder: &mut D)
                                    -> Result<&'tcx ty::AdtDef, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
@@ -230,7 +230,7 @@ pub fn decode_adt_def<'a, 'tcx, D>(decoder: &mut D)
 }
 
 #[inline]
-pub fn decode_existential_predicate_slice<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_existential_predicate_slice<'a, 'tcx, D>(decoder: &mut D)
     -> Result<&'tcx ty::Slice<ty::ExistentialPredicate<'tcx>>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
@@ -241,7 +241,7 @@ pub fn decode_existential_predicate_slice<'a, 'tcx, D>(decoder: &mut D)
 }
 
 #[inline]
-pub fn decode_byte_array<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_byte_array<'a, 'tcx, D>(decoder: &mut D)
                                       -> Result<ByteArray<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,
@@ -252,7 +252,7 @@ pub fn decode_byte_array<'a, 'tcx, D>(decoder: &mut D)
 }
 
 #[inline]
-pub fn decode_const<'a, 'tcx, D>(decoder: &mut D)
+pub(crate) fn decode_const<'a, 'tcx, D>(decoder: &mut D)
                                  -> Result<&'tcx ty::Const<'tcx>, D::Error>
     where D: TyDecoder<'a, 'tcx>,
           'tcx: 'a,

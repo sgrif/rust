@@ -17,17 +17,17 @@ use hir;
 use hir::def_id::DefId;
 
 mod construct;
-pub mod graphviz;
+pub(crate) mod graphviz;
 
-pub struct CFG {
-    pub owner_def_id: DefId,
-    pub graph: CFGGraph,
-    pub entry: CFGIndex,
-    pub exit: CFGIndex,
+pub(crate) struct CFG {
+    pub(crate) owner_def_id: DefId,
+    pub(crate) graph: CFGGraph,
+    pub(crate) entry: CFGIndex,
+    pub(crate) exit: CFGIndex,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum CFGNodeData {
+pub(crate) enum CFGNodeData {
     AST(hir::ItemLocalId),
     Entry,
     Exit,
@@ -36,7 +36,7 @@ pub enum CFGNodeData {
 }
 
 impl CFGNodeData {
-    pub fn id(&self) -> hir::ItemLocalId {
+    pub(crate) fn id(&self) -> hir::ItemLocalId {
         if let CFGNodeData::AST(id) = *self {
             id
         } else {
@@ -46,25 +46,25 @@ impl CFGNodeData {
 }
 
 #[derive(Debug)]
-pub struct CFGEdgeData {
-    pub exiting_scopes: Vec<hir::ItemLocalId>
+pub(crate) struct CFGEdgeData {
+    pub(crate) exiting_scopes: Vec<hir::ItemLocalId>
 }
 
-pub type CFGIndex = graph::NodeIndex;
+pub(crate) type CFGIndex = graph::NodeIndex;
 
-pub type CFGGraph = graph::Graph<CFGNodeData, CFGEdgeData>;
+pub(crate) type CFGGraph = graph::Graph<CFGNodeData, CFGEdgeData>;
 
-pub type CFGNode = graph::Node<CFGNodeData>;
+pub(crate) type CFGNode = graph::Node<CFGNodeData>;
 
-pub type CFGEdge = graph::Edge<CFGEdgeData>;
+pub(crate) type CFGEdge = graph::Edge<CFGEdgeData>;
 
 impl CFG {
-    pub fn new<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) fn new<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                          body: &hir::Body) -> CFG {
         construct::construct(tcx, body)
     }
 
-    pub fn node_is_reachable(&self, id: hir::ItemLocalId) -> bool {
+    pub(crate) fn node_is_reachable(&self, id: hir::ItemLocalId) -> bool {
         self.graph.depth_traverse(self.entry, graph::OUTGOING)
                   .any(|idx| self.graph.node_data(idx).id() == id)
     }

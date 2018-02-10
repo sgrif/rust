@@ -10,10 +10,10 @@
 
 //! Trait Resolution. See README.md for an overview of how this works.
 
-pub use self::SelectionError::*;
-pub use self::FulfillmentErrorCode::*;
-pub use self::Vtable::*;
-pub use self::ObligationCauseCode::*;
+pub(crate) use self::SelectionError::*;
+pub(crate) use self::FulfillmentErrorCode::*;
+pub(crate) use self::Vtable::*;
+pub(crate) use self::ObligationCauseCode::*;
 
 use hir;
 use hir::def_id::DefId;
@@ -29,24 +29,24 @@ use std::rc::Rc;
 use syntax::ast;
 use syntax_pos::{Span, DUMMY_SP};
 
-pub use self::coherence::{orphan_check, overlapping_impls, OrphanCheckErr, OverlapResult};
-pub use self::fulfill::FulfillmentContext;
-pub use self::project::MismatchedProjectionTypes;
-pub use self::project::{normalize, normalize_projection_type, Normalized};
-pub use self::project::{ProjectionCache, ProjectionCacheSnapshot, Reveal};
-pub use self::object_safety::ObjectSafetyViolation;
-pub use self::object_safety::MethodViolationCode;
-pub use self::on_unimplemented::{OnUnimplementedDirective, OnUnimplementedNote};
-pub use self::select::{EvaluationCache, SelectionContext, SelectionCache};
-pub use self::select::IntercrateAmbiguityCause;
-pub use self::specialize::{OverlapError, specialization_graph, translate_substs};
-pub use self::specialize::{SpecializesCache, find_associated_item};
-pub use self::util::elaborate_predicates;
-pub use self::util::supertraits;
-pub use self::util::Supertraits;
-pub use self::util::supertrait_def_ids;
-pub use self::util::SupertraitDefIds;
-pub use self::util::transitive_bounds;
+pub(crate) use self::coherence::{orphan_check, overlapping_impls, OrphanCheckErr, OverlapResult};
+pub(crate) use self::fulfill::FulfillmentContext;
+pub(crate) use self::project::MismatchedProjectionTypes;
+pub(crate) use self::project::{normalize, normalize_projection_type, Normalized};
+pub(crate) use self::project::{ProjectionCache, ProjectionCacheSnapshot, Reveal};
+pub(crate) use self::object_safety::ObjectSafetyViolation;
+pub(crate) use self::object_safety::MethodViolationCode;
+pub(crate) use self::on_unimplemented::{OnUnimplementedDirective, OnUnimplementedNote};
+pub(crate) use self::select::{EvaluationCache, SelectionContext, SelectionCache};
+pub(crate) use self::select::IntercrateAmbiguityCause;
+pub(crate) use self::specialize::{OverlapError, specialization_graph, translate_substs};
+pub(crate) use self::specialize::{SpecializesCache, find_associated_item};
+pub(crate) use self::util::elaborate_predicates;
+pub(crate) use self::util::supertraits;
+pub(crate) use self::util::Supertraits;
+pub(crate) use self::util::supertrait_def_ids;
+pub(crate) use self::util::SupertraitDefIds;
+pub(crate) use self::util::transitive_bounds;
 
 mod coherence;
 mod error_reporting;
@@ -57,12 +57,12 @@ mod on_unimplemented;
 mod select;
 mod specialize;
 mod structural_impls;
-pub mod trans;
+pub(crate) mod trans;
 mod util;
 
 // Whether to enable bug compatibility with issue #43355
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum IntercrateMode {
+pub(crate) enum IntercrateMode {
     Issue43355,
     Fixed
 }
@@ -74,20 +74,20 @@ pub enum IntercrateMode {
 /// provides the required vtable, or else finding a bound that is in
 /// scope. The eventual result is usually a `Selection` (defined below).
 #[derive(Clone, PartialEq, Eq)]
-pub struct Obligation<'tcx, T> {
-    pub cause: ObligationCause<'tcx>,
-    pub param_env: ty::ParamEnv<'tcx>,
-    pub recursion_depth: usize,
-    pub predicate: T,
+pub(crate) struct Obligation<'tcx, T> {
+    pub(crate) cause: ObligationCause<'tcx>,
+    pub(crate) param_env: ty::ParamEnv<'tcx>,
+    pub(crate) recursion_depth: usize,
+    pub(crate) predicate: T,
 }
 
-pub type PredicateObligation<'tcx> = Obligation<'tcx, ty::Predicate<'tcx>>;
-pub type TraitObligation<'tcx> = Obligation<'tcx, ty::PolyTraitPredicate<'tcx>>;
+pub(crate) type PredicateObligation<'tcx> = Obligation<'tcx, ty::Predicate<'tcx>>;
+pub(crate) type TraitObligation<'tcx> = Obligation<'tcx, ty::PolyTraitPredicate<'tcx>>;
 
 /// Why did we incur this obligation? Used for error reporting.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ObligationCause<'tcx> {
-    pub span: Span,
+pub(crate) struct ObligationCause<'tcx> {
+    pub(crate) span: Span,
 
     // The id of the fn body that triggered this obligation. This is
     // used for region obligations to determine the precise
@@ -95,13 +95,13 @@ pub struct ObligationCause<'tcx> {
     // (in particular, closures can add new assumptions). See the
     // field `region_obligations` of the `FulfillmentContext` for more
     // information.
-    pub body_id: ast::NodeId,
+    pub(crate) body_id: ast::NodeId,
 
-    pub code: ObligationCauseCode<'tcx>
+    pub(crate) code: ObligationCauseCode<'tcx>
 }
 
 impl<'tcx> ObligationCause<'tcx> {
-    pub fn span<'a, 'gcx>(&self, tcx: &TyCtxt<'a, 'gcx, 'tcx>) -> Span {
+    pub(crate) fn span<'a, 'gcx>(&self, tcx: &TyCtxt<'a, 'gcx, 'tcx>) -> Span {
         match self.code {
             ObligationCauseCode::CompareImplMethodObligation { .. } |
             ObligationCauseCode::MainFunctionType |
@@ -114,7 +114,7 @@ impl<'tcx> ObligationCause<'tcx> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ObligationCauseCode<'tcx> {
+pub(crate) enum ObligationCauseCode<'tcx> {
     /// Not well classified or should be obvious from span.
     MiscObligation,
 
@@ -216,7 +216,7 @@ pub enum ObligationCauseCode<'tcx> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct DerivedObligationCause<'tcx> {
+pub(crate) struct DerivedObligationCause<'tcx> {
     /// The trait reference of the parent obligation that led to the
     /// current obligation. Note that only trait obligations lead to
     /// derived obligations, so we just store the trait reference here
@@ -227,14 +227,14 @@ pub struct DerivedObligationCause<'tcx> {
     parent_code: Rc<ObligationCauseCode<'tcx>>
 }
 
-pub type Obligations<'tcx, O> = Vec<Obligation<'tcx, O>>;
-pub type PredicateObligations<'tcx> = Vec<PredicateObligation<'tcx>>;
-pub type TraitObligations<'tcx> = Vec<TraitObligation<'tcx>>;
+pub(crate) type Obligations<'tcx, O> = Vec<Obligation<'tcx, O>>;
+pub(crate) type PredicateObligations<'tcx> = Vec<PredicateObligation<'tcx>>;
+pub(crate) type TraitObligations<'tcx> = Vec<TraitObligation<'tcx>>;
 
-pub type Selection<'tcx> = Vtable<'tcx, PredicateObligation<'tcx>>;
+pub(crate) type Selection<'tcx> = Vtable<'tcx, PredicateObligation<'tcx>>;
 
 #[derive(Clone,Debug)]
-pub enum SelectionError<'tcx> {
+pub(crate) enum SelectionError<'tcx> {
     Unimplemented,
     OutputTypeParameterMismatch(ty::PolyTraitRef<'tcx>,
                                 ty::PolyTraitRef<'tcx>,
@@ -243,13 +243,13 @@ pub enum SelectionError<'tcx> {
     ConstEvalFailure(ConstEvalErr<'tcx>),
 }
 
-pub struct FulfillmentError<'tcx> {
-    pub obligation: PredicateObligation<'tcx>,
-    pub code: FulfillmentErrorCode<'tcx>
+pub(crate) struct FulfillmentError<'tcx> {
+    pub(crate) obligation: PredicateObligation<'tcx>,
+    pub(crate) code: FulfillmentErrorCode<'tcx>
 }
 
 #[derive(Clone)]
-pub enum FulfillmentErrorCode<'tcx> {
+pub(crate) enum FulfillmentErrorCode<'tcx> {
     CodeSelectionError(SelectionError<'tcx>),
     CodeProjectionError(MismatchedProjectionTypes<'tcx>),
     CodeSubtypeError(ExpectedFound<Ty<'tcx>>,
@@ -264,7 +264,7 @@ pub enum FulfillmentErrorCode<'tcx> {
 /// - `Ok(None)`: could not definitely determine anything, usually due
 ///   to inconclusive type inference.
 /// - `Err(e)`: error `e` occurred
-pub type SelectionResult<'tcx, T> = Result<Option<T>, SelectionError<'tcx>>;
+pub(crate) type SelectionResult<'tcx, T> = Result<Option<T>, SelectionError<'tcx>>;
 
 /// Given the successful resolution of an obligation, the `Vtable`
 /// indicates where the vtable comes from. Note that while we call this
@@ -305,7 +305,7 @@ pub type SelectionResult<'tcx, T> = Result<Option<T>, SelectionError<'tcx>>;
 ///
 /// See explanation on `VtableImplData`.
 #[derive(Clone, RustcEncodable, RustcDecodable)]
-pub enum Vtable<'tcx, N> {
+pub(crate) enum Vtable<'tcx, N> {
     /// Vtable identifying a particular impl.
     VtableImpl(VtableImplData<'tcx, N>),
 
@@ -350,64 +350,64 @@ pub enum Vtable<'tcx, N> {
 /// is `()`, because trans only requires a shallow resolution of an
 /// impl, and nested obligations are satisfied later.
 #[derive(Clone, PartialEq, Eq, RustcEncodable, RustcDecodable)]
-pub struct VtableImplData<'tcx, N> {
-    pub impl_def_id: DefId,
-    pub substs: &'tcx Substs<'tcx>,
-    pub nested: Vec<N>
+pub(crate) struct VtableImplData<'tcx, N> {
+    pub(crate) impl_def_id: DefId,
+    pub(crate) substs: &'tcx Substs<'tcx>,
+    pub(crate) nested: Vec<N>
 }
 
 #[derive(Clone, PartialEq, Eq, RustcEncodable, RustcDecodable)]
-pub struct VtableGeneratorData<'tcx, N> {
-    pub closure_def_id: DefId,
-    pub substs: ty::ClosureSubsts<'tcx>,
+pub(crate) struct VtableGeneratorData<'tcx, N> {
+    pub(crate) closure_def_id: DefId,
+    pub(crate) substs: ty::ClosureSubsts<'tcx>,
     /// Nested obligations. This can be non-empty if the generator
     /// signature contains associated types.
-    pub nested: Vec<N>
+    pub(crate) nested: Vec<N>
 }
 
 #[derive(Clone, PartialEq, Eq, RustcEncodable, RustcDecodable)]
-pub struct VtableClosureData<'tcx, N> {
-    pub closure_def_id: DefId,
-    pub substs: ty::ClosureSubsts<'tcx>,
+pub(crate) struct VtableClosureData<'tcx, N> {
+    pub(crate) closure_def_id: DefId,
+    pub(crate) substs: ty::ClosureSubsts<'tcx>,
     /// Nested obligations. This can be non-empty if the closure
     /// signature contains associated types.
-    pub nested: Vec<N>
+    pub(crate) nested: Vec<N>
 }
 
 #[derive(Clone, RustcEncodable, RustcDecodable)]
-pub struct VtableAutoImplData<N> {
-    pub trait_def_id: DefId,
-    pub nested: Vec<N>
+pub(crate) struct VtableAutoImplData<N> {
+    pub(crate) trait_def_id: DefId,
+    pub(crate) nested: Vec<N>
 }
 
 #[derive(Clone, RustcEncodable, RustcDecodable)]
-pub struct VtableBuiltinData<N> {
-    pub nested: Vec<N>
+pub(crate) struct VtableBuiltinData<N> {
+    pub(crate) nested: Vec<N>
 }
 
 /// A vtable for some object-safe trait `Foo` automatically derived
 /// for the object type `Foo`.
 #[derive(PartialEq, Eq, Clone, RustcEncodable, RustcDecodable)]
-pub struct VtableObjectData<'tcx, N> {
+pub(crate) struct VtableObjectData<'tcx, N> {
     /// `Foo` upcast to the obligation trait. This will be some supertrait of `Foo`.
-    pub upcast_trait_ref: ty::PolyTraitRef<'tcx>,
+    pub(crate) upcast_trait_ref: ty::PolyTraitRef<'tcx>,
 
     /// The vtable is formed by concatenating together the method lists of
     /// the base object trait and all supertraits; this is the start of
     /// `upcast_trait_ref`'s methods in that vtable.
-    pub vtable_base: usize,
+    pub(crate) vtable_base: usize,
 
-    pub nested: Vec<N>,
+    pub(crate) nested: Vec<N>,
 }
 
 #[derive(Clone, PartialEq, Eq, RustcEncodable, RustcDecodable)]
-pub struct VtableFnPointerData<'tcx, N> {
-    pub fn_ty: Ty<'tcx>,
-    pub nested: Vec<N>
+pub(crate) struct VtableFnPointerData<'tcx, N> {
+    pub(crate) fn_ty: Ty<'tcx>,
+    pub(crate) nested: Vec<N>
 }
 
 /// Creates predicate obligations from the generic bounds.
-pub fn predicates_for_generics<'tcx>(cause: ObligationCause<'tcx>,
+pub(crate) fn predicates_for_generics<'tcx>(cause: ObligationCause<'tcx>,
                                      param_env: ty::ParamEnv<'tcx>,
                                      generic_bounds: &ty::InstantiatedPredicates<'tcx>)
                                      -> PredicateObligations<'tcx>
@@ -420,7 +420,7 @@ pub fn predicates_for_generics<'tcx>(cause: ObligationCause<'tcx>,
 /// `bound` or is not known to meet bound (note that this is
 /// conservative towards *no impl*, which is the opposite of the
 /// `evaluate` methods).
-pub fn type_known_to_meet_bound<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn type_known_to_meet_bound<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                                 param_env: ty::ParamEnv<'tcx>,
                                                 ty: Ty<'tcx>,
                                                 def_id: DefId,
@@ -490,7 +490,7 @@ pub fn type_known_to_meet_bound<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx
 
 // FIXME: this is gonna need to be removed ...
 /// Normalizes the parameter environment, reporting errors if they occur.
-pub fn normalize_param_env_or_error<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+pub(crate) fn normalize_param_env_or_error<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                                               region_context: DefId,
                                               unnormalized_env: ty::ParamEnv<'tcx>,
                                               cause: ObligationCause<'tcx>)
@@ -611,7 +611,7 @@ pub fn normalize_param_env_or_error<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
     })
 }
 
-pub fn fully_normalize<'a, 'gcx, 'tcx, T>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn fully_normalize<'a, 'gcx, 'tcx, T>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                           cause: ObligationCause<'tcx>,
                                           param_env: ty::ParamEnv<'tcx>,
                                           value: &T)
@@ -635,7 +635,7 @@ pub fn fully_normalize<'a, 'gcx, 'tcx, T>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
     fully_normalize_with_fulfillcx(infcx, fulfillcx, cause, param_env, value)
 }
 
-pub fn fully_normalize_with_fulfillcx<'a, 'gcx, 'tcx, T>(
+pub(crate) fn fully_normalize_with_fulfillcx<'a, 'gcx, 'tcx, T>(
     infcx: &InferCtxt<'a, 'gcx, 'tcx>,
     mut fulfill_cx: FulfillmentContext<'tcx>,
     cause: ObligationCause<'tcx>,
@@ -773,7 +773,7 @@ fn vtable_methods<'a, 'tcx>(
 }
 
 impl<'tcx,O> Obligation<'tcx,O> {
-    pub fn new(cause: ObligationCause<'tcx>,
+    pub(crate) fn new(cause: ObligationCause<'tcx>,
                param_env: ty::ParamEnv<'tcx>,
                predicate: O)
                -> Obligation<'tcx, O>
@@ -790,7 +790,7 @@ impl<'tcx,O> Obligation<'tcx,O> {
         Obligation { cause, param_env, recursion_depth, predicate }
     }
 
-    pub fn misc(span: Span,
+    pub(crate) fn misc(span: Span,
                 body_id: ast::NodeId,
                 param_env: ty::ParamEnv<'tcx>,
                 trait_ref: O)
@@ -798,7 +798,7 @@ impl<'tcx,O> Obligation<'tcx,O> {
         Obligation::new(ObligationCause::misc(span, body_id), param_env, trait_ref)
     }
 
-    pub fn with<P>(&self, value: P) -> Obligation<'tcx,P> {
+    pub(crate) fn with<P>(&self, value: P) -> Obligation<'tcx,P> {
         Obligation { cause: self.cause.clone(),
                      param_env: self.param_env,
                      recursion_depth: self.recursion_depth,
@@ -807,24 +807,24 @@ impl<'tcx,O> Obligation<'tcx,O> {
 }
 
 impl<'tcx> ObligationCause<'tcx> {
-    pub fn new(span: Span,
+    pub(crate) fn new(span: Span,
                body_id: ast::NodeId,
                code: ObligationCauseCode<'tcx>)
                -> ObligationCause<'tcx> {
         ObligationCause { span: span, body_id: body_id, code: code }
     }
 
-    pub fn misc(span: Span, body_id: ast::NodeId) -> ObligationCause<'tcx> {
+    pub(crate) fn misc(span: Span, body_id: ast::NodeId) -> ObligationCause<'tcx> {
         ObligationCause { span: span, body_id: body_id, code: MiscObligation }
     }
 
-    pub fn dummy() -> ObligationCause<'tcx> {
+    pub(crate) fn dummy() -> ObligationCause<'tcx> {
         ObligationCause { span: DUMMY_SP, body_id: ast::CRATE_NODE_ID, code: MiscObligation }
     }
 }
 
 impl<'tcx, N> Vtable<'tcx, N> {
-    pub fn nested_obligations(self) -> Vec<N> {
+    pub(crate) fn nested_obligations(self) -> Vec<N> {
         match self {
             VtableImpl(i) => i.nested,
             VtableParam(n) => n,
@@ -850,7 +850,7 @@ impl<'tcx, N> Vtable<'tcx, N> {
         }
     }
 
-    pub fn map<M, F>(self, f: F) -> Vtable<'tcx, M> where F: FnMut(N) -> M {
+    pub(crate) fn map<M, F>(self, f: F) -> Vtable<'tcx, M> where F: FnMut(N) -> M {
         match self {
             VtableImpl(i) => VtableImpl(VtableImplData {
                 impl_def_id: i.impl_def_id,
@@ -903,7 +903,7 @@ impl<'tcx> TraitObligation<'tcx> {
     }
 }
 
-pub fn provide(providers: &mut ty::maps::Providers) {
+pub(crate) fn provide(providers: &mut ty::maps::Providers) {
     *providers = ty::maps::Providers {
         is_object_safe: object_safety::is_object_safe_provider,
         specialization_graph_of: specialize::specialization_graph_provider,

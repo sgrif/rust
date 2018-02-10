@@ -77,22 +77,22 @@ use rustc_back::PanicStrategy;
 /// The value is None if the crate does not need to be linked (it was found
 /// statically in another dylib), or Some(kind) if it needs to be linked as
 /// `kind` (either static or dynamic).
-pub type DependencyList = Vec<Linkage>;
+pub(crate) type DependencyList = Vec<Linkage>;
 
 /// A mapping of all required dependencies for a particular flavor of output.
 ///
 /// This is local to the tcx, and is generally relevant to one session.
-pub type Dependencies = FxHashMap<config::CrateType, DependencyList>;
+pub(crate) type Dependencies = FxHashMap<config::CrateType, DependencyList>;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Linkage {
+pub(crate) enum Linkage {
     NotLinked,
     IncludedFromDylib,
     Static,
     Dynamic,
 }
 
-pub fn calculate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn calculate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let sess = &tcx.sess;
     let mut fmts = sess.dependency_formats.borrow_mut();
     for &ty in sess.crate_types.borrow().iter() {

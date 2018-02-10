@@ -20,7 +20,7 @@ use syntax::ast;
 
 use std::cell::Cell;
 
-pub fn update_limits(sess: &Session, krate: &ast::Crate) {
+pub(crate) fn update_limits(sess: &Session, krate: &ast::Crate) {
     update_limit(sess, krate, &sess.recursion_limit, "recursion_limit",
                  "recursion limit");
     update_limit(sess, krate, &sess.type_length_limit, "type_length_limit",

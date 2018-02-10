@@ -25,7 +25,7 @@ use syntax::codemap::MultiSpan;
 use syntax::symbol::Symbol;
 use util::nodemap::FxHashMap;
 
-pub struct LintLevelSets {
+pub(crate) struct LintLevelSets {
     list: Vec<LintSet>,
     lint_cap: Level,
 }
@@ -44,7 +44,7 @@ enum LintSet {
 }
 
 impl LintLevelSets {
-    pub fn new(sess: &Session) -> LintLevelSets {
+    pub(crate) fn new(sess: &Session) -> LintLevelSets {
         let mut me = LintLevelSets {
             list: Vec::new(),
             lint_cap: Level::Forbid,
@@ -53,7 +53,7 @@ impl LintLevelSets {
         return me
     }
 
-    pub fn builder(sess: &Session) -> LintLevelsBuilder {
+    pub(crate) fn builder(sess: &Session) -> LintLevelsBuilder {
         LintLevelsBuilder::new(sess, LintLevelSets::new(sess))
     }
 
@@ -150,7 +150,7 @@ impl LintLevelSets {
     }
 }
 
-pub struct LintLevelsBuilder<'a> {
+pub(crate) struct LintLevelsBuilder<'a> {
     sess: &'a Session,
     sets: LintLevelSets,
     id_to_set: FxHashMap<HirId, u32>,
@@ -158,12 +158,12 @@ pub struct LintLevelsBuilder<'a> {
     warn_about_weird_lints: bool,
 }
 
-pub struct BuilderPush {
+pub(crate) struct BuilderPush {
     prev: u32,
 }
 
 impl<'a> LintLevelsBuilder<'a> {
-    pub fn new(sess: &'a Session, sets: LintLevelSets) -> LintLevelsBuilder<'a> {
+    pub(crate) fn new(sess: &'a Session, sets: LintLevelSets) -> LintLevelsBuilder<'a> {
         assert_eq!(sets.list.len(), 1);
         LintLevelsBuilder {
             sess,
@@ -188,7 +188,7 @@ impl<'a> LintLevelsBuilder<'a> {
     ///   #[allow]
     ///
     /// Don't forget to call `pop`!
-    pub fn push(&mut self, attrs: &[ast::Attribute]) -> BuilderPush {
+    pub(crate) fn push(&mut self, attrs: &[ast::Attribute]) -> BuilderPush {
         let mut specs = FxHashMap();
         let store = self.sess.lint_store.borrow();
         let sess = self.sess;
@@ -330,13 +330,13 @@ impl<'a> LintLevelsBuilder<'a> {
     }
 
     /// Called after `push` when the scope of a set of attributes are exited.
-    pub fn pop(&mut self, push: BuilderPush) {
+    pub(crate) fn pop(&mut self, push: BuilderPush) {
         self.cur = push.prev;
     }
 
     /// Used to emit a lint-related diagnostic based on the current state of
     /// this lint context.
-    pub fn struct_lint(&self,
+    pub(crate) fn struct_lint(&self,
                        lint: &'static Lint,
                        span: Option<MultiSpan>,
                        msg: &str)
@@ -348,15 +348,15 @@ impl<'a> LintLevelsBuilder<'a> {
 
     /// Registers the ID provided with the current set of lints stored in
     /// this context.
-    pub fn register_id(&mut self, id: HirId) {
+    pub(crate) fn register_id(&mut self, id: HirId) {
         self.id_to_set.insert(id, self.cur);
     }
 
-    pub fn build(self) -> LintLevelSets {
+    pub(crate) fn build(self) -> LintLevelSets {
         self.sets
     }
 
-    pub fn build_map(self) -> LintLevelMap {
+    pub(crate) fn build_map(self) -> LintLevelMap {
         LintLevelMap {
             sets: self.sets,
             id_to_set: self.id_to_set,
@@ -364,7 +364,7 @@ impl<'a> LintLevelsBuilder<'a> {
     }
 }
 
-pub struct LintLevelMap {
+pub(crate) struct LintLevelMap {
     sets: LintLevelSets,
     id_to_set: FxHashMap<HirId, u32>,
 }
@@ -377,7 +377,7 @@ impl LintLevelMap {
     /// If the `id` was not previously registered, returns `None`. If `None` is
     /// returned then the parent of `id` should be acquired and this function
     /// should be called again.
-    pub fn level_and_source(&self, lint: &'static Lint, id: HirId)
+    pub(crate) fn level_and_source(&self, lint: &'static Lint, id: HirId)
         -> Option<(Level, LintSource)>
     {
         self.id_to_set.get(&id).map(|idx| {
@@ -386,7 +386,7 @@ impl LintLevelMap {
     }
 
     /// Returns if this `id` has lint level information.
-    pub fn lint_level_set(&self, id: HirId) -> Option<u32> {
+    pub(crate) fn lint_level_set(&self, id: HirId) -> Option<u32> {
         self.id_to_set.get(&id).cloned()
     }
 }

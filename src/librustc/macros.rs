@@ -11,16 +11,16 @@
 // ignore-tidy-linelength
 
 macro_rules! enum_from_u32 {
-    ($(#[$attr:meta])* pub enum $name:ident {
+    ($(#[$attr:meta])* pub(crate) enum $name:ident {
         $($variant:ident = $e:expr,)*
     }) => {
         $(#[$attr])*
-        pub enum $name {
+        pub(crate) enum $name {
             $($variant = $e),*
         }
 
         impl $name {
-            pub fn from_u32(u: u32) -> Option<$name> {
+            pub(crate) fn from_u32(u: u32) -> Option<$name> {
                 $(if u == $name::$variant as u32 {
                     return Some($name::$variant)
                 })*
@@ -28,16 +28,16 @@ macro_rules! enum_from_u32 {
             }
         }
     };
-    ($(#[$attr:meta])* pub enum $name:ident {
+    ($(#[$attr:meta])* pub(crate) enum $name:ident {
         $($variant:ident,)*
     }) => {
         $(#[$attr])*
-        pub enum $name {
+        pub(crate) enum $name {
             $($variant,)*
         }
 
         impl $name {
-            pub fn from_u32(u: u32) -> Option<$name> {
+            pub(crate) fn from_u32(u: u32) -> Option<$name> {
                 $(if u == $name::$variant as u32 {
                     return Some($name::$variant)
                 })*

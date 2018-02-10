@@ -12,7 +12,7 @@ use ty::{self, Lift, TyCtxt, Region};
 use rustc_data_structures::transitive_relation::TransitiveRelation;
 
 #[derive(Clone, RustcEncodable, RustcDecodable, Debug)]
-pub struct FreeRegionMap<'tcx> {
+pub(crate) struct FreeRegionMap<'tcx> {
     // Stores the relation `a < b`, where `a` and `b` are regions.
     //
     // Invariant: only free regions like `'x` or `'static` are stored
@@ -21,17 +21,17 @@ pub struct FreeRegionMap<'tcx> {
 }
 
 impl<'tcx> FreeRegionMap<'tcx> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         FreeRegionMap { relation: TransitiveRelation::new() }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.relation.is_empty()
     }
 
     // Record that `'sup:'sub`. Or, put another way, `'sub <= 'sup`.
     // (with the exception that `'static: 'x` is not notable)
-    pub fn relate_regions(&mut self, sub: Region<'tcx>, sup: Region<'tcx>) {
+    pub(crate) fn relate_regions(&mut self, sub: Region<'tcx>, sup: Region<'tcx>) {
         debug!("relate_regions(sub={:?}, sup={:?})", sub, sup);
         if is_free_or_static(sub) && is_free(sup) {
             self.relation.add(sub, sup)
@@ -42,7 +42,7 @@ impl<'tcx> FreeRegionMap<'tcx> {
     /// cases, this is more conservative than necessary, in order to
     /// avoid making arbitrary choices. See
     /// `TransitiveRelation::postdom_upper_bound` for more details.
-    pub fn lub_free_regions<'a, 'gcx>(&self,
+    pub(crate) fn lub_free_regions<'a, 'gcx>(&self,
                                       tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                       r_a: Region<'tcx>,
                                       r_b: Region<'tcx>)
@@ -64,7 +64,7 @@ impl<'tcx> FreeRegionMap<'tcx> {
 /// The NLL region handling code represents free region relations in a
 /// slightly different way; this trait allows functions to be abstract
 /// over which version is in use.
-pub trait FreeRegionRelations<'tcx> {
+pub(crate) trait FreeRegionRelations<'tcx> {
     /// Tests whether `r_a <= r_b`. Both must be free regions or
     /// `'static`.
     fn sub_free_regions(&self, shorter: ty::Region<'tcx>, longer: ty::Region<'tcx>) -> bool;

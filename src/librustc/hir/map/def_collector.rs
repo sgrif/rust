@@ -45,7 +45,7 @@ impl<'a> DefCollector<'a> {
         }
     }
 
-    pub fn collect_root(&mut self,
+    pub(crate) fn collect_root(&mut self,
                         crate_name: &str,
                         crate_disambiguator: CrateDisambiguator) {
         let root = self.definitions.create_root_def(crate_name,

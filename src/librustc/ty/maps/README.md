@@ -157,7 +157,7 @@ various `provide` functions. These functions tend to look something
 like this:
 
 ```rust
-pub fn provide(providers: &mut Providers) {
+pub(crate) fn provide(providers: &mut Providers) {
     *providers = Providers {
         type_of,
         ..*providers
@@ -174,7 +174,7 @@ let's call it `fubar`, into the crate above, we might modify the `provide()`
 function like so:
 
 ```rust
-pub fn provide(providers: &mut Providers) {
+pub(crate) fn provide(providers: &mut Providers) {
     *providers = Providers {
         type_of,
         fubar,
@@ -276,7 +276,7 @@ like this:
 
 ```rust
 // Dummy struct representing a particular kind of query:
-pub struct type_of<'tcx> { phantom: PhantomData<&'tcx ()> }
+pub(crate) struct type_of<'tcx> { phantom: PhantomData<&'tcx ()> }
 
 impl<'tcx> QueryConfig for type_of<'tcx> {
   type Key = DefId;

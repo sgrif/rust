@@ -55,7 +55,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// the actual types (`?T`, `Option<?T`) -- and remember that
     /// after the snapshot is popped, the variable `?T` is no longer
     /// unified.
-    pub fn fudge_regions_if_ok<T, E, F>(&self,
+    pub(crate) fn fudge_regions_if_ok<T, E, F>(&self,
                                         origin: &RegionVariableOrigin,
                                         f: F) -> Result<T, E> where
         F: FnOnce() -> Result<T, E>,
@@ -109,7 +109,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     }
 }
 
-pub struct RegionFudger<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct RegionFudger<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
     type_variables: &'a TypeVariableMap,
     region_vars: &'a Vec<ty::RegionVid>,

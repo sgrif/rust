@@ -18,13 +18,13 @@ use util::ppaux;
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Instance<'tcx> {
-    pub def: InstanceDef<'tcx>,
-    pub substs: &'tcx Substs<'tcx>,
+pub(crate) struct Instance<'tcx> {
+    pub(crate) def: InstanceDef<'tcx>,
+    pub(crate) substs: &'tcx Substs<'tcx>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum InstanceDef<'tcx> {
+pub(crate) enum InstanceDef<'tcx> {
     Item(DefId),
     Intrinsic(DefId),
 
@@ -46,7 +46,7 @@ pub enum InstanceDef<'tcx> {
 }
 
 impl<'a, 'tcx> Instance<'tcx> {
-    pub fn ty(&self,
+    pub(crate) fn ty(&self,
               tcx: TyCtxt<'a, 'tcx, 'tcx>)
               -> Ty<'tcx>
     {
@@ -57,7 +57,7 @@ impl<'a, 'tcx> Instance<'tcx> {
 
 impl<'tcx> InstanceDef<'tcx> {
     #[inline]
-    pub fn def_id(&self) -> DefId {
+    pub(crate) fn def_id(&self) -> DefId {
         match *self {
             InstanceDef::Item(def_id) |
             InstanceDef::FnPtrShim(def_id, _) |
@@ -70,11 +70,11 @@ impl<'tcx> InstanceDef<'tcx> {
     }
 
     #[inline]
-    pub fn attrs<'a>(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) -> ty::Attributes<'tcx> {
+    pub(crate) fn attrs<'a>(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) -> ty::Attributes<'tcx> {
         tcx.get_attrs(self.def_id())
     }
 
-    pub fn is_inline<'a>(
+    pub(crate) fn is_inline<'a>(
         &self,
         tcx: TyCtxt<'a, 'tcx, 'tcx>
     ) -> bool {
@@ -92,7 +92,7 @@ impl<'tcx> InstanceDef<'tcx> {
         }
     }
 
-    pub fn requires_local<'a>(
+    pub(crate) fn requires_local<'a>(
         &self,
         tcx: TyCtxt<'a, 'tcx, 'tcx>
     ) -> bool {
@@ -139,7 +139,7 @@ impl<'tcx> fmt::Display for Instance<'tcx> {
 }
 
 impl<'a, 'b, 'tcx> Instance<'tcx> {
-    pub fn new(def_id: DefId, substs: &'tcx Substs<'tcx>)
+    pub(crate) fn new(def_id: DefId, substs: &'tcx Substs<'tcx>)
                -> Instance<'tcx> {
         assert!(!substs.has_escaping_regions(),
                 "substs of instance {:?} not normalized for trans: {:?}",
@@ -147,12 +147,12 @@ impl<'a, 'b, 'tcx> Instance<'tcx> {
         Instance { def: InstanceDef::Item(def_id), substs: substs }
     }
 
-    pub fn mono(tcx: TyCtxt<'a, 'tcx, 'b>, def_id: DefId) -> Instance<'tcx> {
+    pub(crate) fn mono(tcx: TyCtxt<'a, 'tcx, 'b>, def_id: DefId) -> Instance<'tcx> {
         Instance::new(def_id, tcx.global_tcx().empty_substs_for_def_id(def_id))
     }
 
     #[inline]
-    pub fn def_id(&self) -> DefId {
+    pub(crate) fn def_id(&self) -> DefId {
         self.def.def_id()
     }
 
@@ -174,7 +174,7 @@ impl<'a, 'b, 'tcx> Instance<'tcx> {
     /// Presuming that coherence and type-check have succeeded, if this method is invoked
     /// in a monomorphic context (i.e., like during trans), then it is guaranteed to return
     /// `Some`.
-    pub fn resolve(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) fn resolve(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                    param_env: ty::ParamEnv<'tcx>,
                    def_id: DefId,
                    substs: &'tcx Substs<'tcx>) -> Option<Instance<'tcx>> {
@@ -222,7 +222,7 @@ impl<'a, 'b, 'tcx> Instance<'tcx> {
         result
     }
 
-    pub fn resolve_closure(
+    pub(crate) fn resolve_closure(
                     tcx: TyCtxt<'a, 'tcx, 'tcx>,
                     def_id: DefId,
                     substs: ty::ClosureSubsts<'tcx>,

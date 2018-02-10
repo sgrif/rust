@@ -28,8 +28,8 @@
 //! example) requires more effort. See `emit_lint` and `GatherNodeLevels`
 //! in `context.rs`.
 
-pub use self::Level::*;
-pub use self::LintSource::*;
+pub(crate) use self::Level::*;
+pub(crate) use self::LintSource::*;
 
 use std::rc::Rc;
 
@@ -48,13 +48,13 @@ use ty::TyCtxt;
 use ty::maps::Providers;
 use util::nodemap::NodeMap;
 
-pub use lint::context::{LateContext, EarlyContext, LintContext, LintStore,
+pub(crate) use lint::context::{LateContext, EarlyContext, LintContext, LintStore,
                         check_crate, check_ast_crate,
                         FutureIncompatibleInfo, BufferedEarlyLint};
 
 /// Specification of a single lint.
 #[derive(Copy, Clone, Debug)]
-pub struct Lint {
+pub(crate) struct Lint {
     /// A string identifier for the lint.
     ///
     /// This identifies the lint in attributes and in command-line arguments.
@@ -65,20 +65,20 @@ pub struct Lint {
     ///
     /// The name is written with underscores, e.g. "unused_imports".
     /// On the command line, underscores become dashes.
-    pub name: &'static str,
+    pub(crate) name: &'static str,
 
     /// Default level for the lint.
-    pub default_level: Level,
+    pub(crate) default_level: Level,
 
     /// Description of the lint or the issue it detects.
     ///
     /// e.g. "imports that are never used"
-    pub desc: &'static str,
+    pub(crate) desc: &'static str,
 }
 
 impl Lint {
     /// Get the lint's name, with ASCII letters converted to lowercase.
-    pub fn name_lower(&self) -> String {
+    pub(crate) fn name_lower(&self) -> String {
         self.name.to_ascii_lowercase()
     }
 }
@@ -105,9 +105,9 @@ macro_rules! lint_array {
     }}
 }
 
-pub type LintArray = &'static [&'static &'static Lint];
+pub(crate) type LintArray = &'static [&'static &'static Lint];
 
-pub trait LintPass {
+pub(crate) trait LintPass {
     /// Get descriptions of the lints this `LintPass` object can emit.
     ///
     /// NB: there is no enforcement that the object only emits lints it registered.
@@ -126,7 +126,7 @@ pub trait LintPass {
 //
 // FIXME: eliminate the duplication with `Visitor`. But this also
 // contains a few lint-specific methods with no equivalent in `Visitor`.
-pub trait LateLintPass<'a, 'tcx>: LintPass {
+pub(crate) trait LateLintPass<'a, 'tcx>: LintPass {
     fn check_body(&mut self, _: &LateContext, _: &'tcx hir::Body) { }
     fn check_body_post(&mut self, _: &LateContext, _: &'tcx hir::Body) { }
     fn check_name(&mut self, _: &LateContext, _: Span, _: ast::Name) { }
@@ -209,7 +209,7 @@ pub trait LateLintPass<'a, 'tcx>: LintPass {
     fn exit_lint_attrs(&mut self, _: &LateContext<'a, 'tcx>, _: &'tcx [ast::Attribute]) { }
 }
 
-pub trait EarlyLintPass: LintPass {
+pub(crate) trait EarlyLintPass: LintPass {
     fn check_ident(&mut self, _: &EarlyContext, _: Span, _: ast::Ident) { }
     fn check_crate(&mut self, _: &EarlyContext, _: &ast::Crate) { }
     fn check_crate_post(&mut self, _: &EarlyContext, _: &ast::Crate) { }
@@ -258,12 +258,12 @@ pub trait EarlyLintPass: LintPass {
 }
 
 /// A lint pass boxed up as a trait object.
-pub type EarlyLintPassObject = Box<EarlyLintPass + 'static>;
-pub type LateLintPassObject = Box<for<'a, 'tcx> LateLintPass<'a, 'tcx> + 'static>;
+pub(crate) type EarlyLintPassObject = Box<EarlyLintPass + 'static>;
+pub(crate) type LateLintPassObject = Box<for<'a, 'tcx> LateLintPass<'a, 'tcx> + 'static>;
 
 /// Identifies a lint known to the compiler.
 #[derive(Clone, Copy, Debug)]
-pub struct LintId {
+pub(crate) struct LintId {
     // Identity is based on pointer equality of this field.
     lint: &'static Lint,
 }
@@ -285,25 +285,25 @@ impl hash::Hash for LintId {
 
 impl LintId {
     /// Get the `LintId` for a `Lint`.
-    pub fn of(lint: &'static Lint) -> LintId {
+    pub(crate) fn of(lint: &'static Lint) -> LintId {
         LintId {
             lint,
         }
     }
 
-    pub fn lint_name_raw(&self) -> &'static str {
+    pub(crate) fn lint_name_raw(&self) -> &'static str {
         self.lint.name
     }
 
     /// Get the name of the lint.
-    pub fn to_string(&self) -> String {
+    pub(crate) fn to_string(&self) -> String {
         self.lint.name_lower()
     }
 }
 
 /// Setting for how to handle a lint.
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
-pub enum Level {
+pub(crate) enum Level {
     Allow, Warn, Deny, Forbid
 }
 
@@ -316,7 +316,7 @@ impl_stable_hash_for!(enum self::Level {
 
 impl Level {
     /// Convert a level to a lower-case string.
-    pub fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             Allow => "allow",
             Warn => "warn",
@@ -326,7 +326,7 @@ impl Level {
     }
 
     /// Convert a lower-case string to a level.
-    pub fn from_str(x: &str) -> Option<Level> {
+    pub(crate) fn from_str(x: &str) -> Option<Level> {
         match x {
             "allow" => Some(Allow),
             "warn" => Some(Warn),
@@ -339,7 +339,7 @@ impl Level {
 
 /// How a lint level was set.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum LintSource {
+pub(crate) enum LintSource {
     /// Lint is at the default level as declared
     /// in rustc or a plugin.
     Default,
@@ -357,24 +357,24 @@ impl_stable_hash_for!(enum self::LintSource {
     CommandLine(text)
 });
 
-pub type LevelSource = (Level, LintSource);
+pub(crate) type LevelSource = (Level, LintSource);
 
-pub mod builtin;
+pub(crate) mod builtin;
 mod context;
 mod levels;
 
-pub use self::levels::{LintLevelSets, LintLevelMap};
+pub(crate) use self::levels::{LintLevelSets, LintLevelMap};
 
-pub struct LintBuffer {
+pub(crate) struct LintBuffer {
     map: NodeMap<Vec<BufferedEarlyLint>>,
 }
 
 impl LintBuffer {
-    pub fn new() -> LintBuffer {
+    pub(crate) fn new() -> LintBuffer {
         LintBuffer { map: NodeMap() }
     }
 
-    pub fn add_lint(&mut self,
+    pub(crate) fn add_lint(&mut self,
                     lint: &'static Lint,
                     id: ast::NodeId,
                     sp: MultiSpan,
@@ -391,17 +391,17 @@ impl LintBuffer {
         }
     }
 
-    pub fn take(&mut self, id: ast::NodeId) -> Vec<BufferedEarlyLint> {
+    pub(crate) fn take(&mut self, id: ast::NodeId) -> Vec<BufferedEarlyLint> {
         self.map.remove(&id).unwrap_or(Vec::new())
     }
 
-    pub fn get_any(&self) -> Option<&[BufferedEarlyLint]> {
+    pub(crate) fn get_any(&self) -> Option<&[BufferedEarlyLint]> {
         let key = self.map.keys().next().map(|k| *k);
         key.map(|k| &self.map[&k][..])
     }
 }
 
-pub fn struct_lint_level<'a>(sess: &'a Session,
+pub(crate) fn struct_lint_level<'a>(sess: &'a Session,
                              lint: &'static Lint,
                              level: Level,
                              src: LintSource,
@@ -573,6 +573,6 @@ impl<'a, 'tcx> intravisit::Visitor<'tcx> for LintLevelMapBuilder<'a, 'tcx> {
     }
 }
 
-pub fn provide(providers: &mut Providers) {
+pub(crate) fn provide(providers: &mut Providers) {
     providers.lint_levels = lint_levels;
 }

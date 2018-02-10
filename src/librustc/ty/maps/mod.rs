@@ -57,20 +57,20 @@ use syntax::symbol::Symbol;
 #[macro_use]
 mod plumbing;
 use self::plumbing::*;
-pub use self::plumbing::force_from_dep_node;
+pub(crate) use self::plumbing::force_from_dep_node;
 
 mod keys;
-pub use self::keys::Key;
+pub(crate) use self::keys::Key;
 
 mod values;
 use self::values::Value;
 
 mod config;
-pub use self::config::QueryConfig;
+pub(crate) use self::config::QueryConfig;
 use self::config::QueryDescription;
 
 mod on_disk_cache;
-pub use self::on_disk_cache::OnDiskCache;
+pub(crate) use self::on_disk_cache::OnDiskCache;
 
 // Each of these maps also corresponds to a method on a
 // `Provider` trait for requesting a value of that type,

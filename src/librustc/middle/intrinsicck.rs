@@ -18,7 +18,7 @@ use syntax_pos::Span;
 use hir::intravisit::{self, Visitor, NestedVisitorMap};
 use hir;
 
-pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let mut visitor = ItemVisitor {
         tcx,
     };

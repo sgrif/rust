@@ -40,7 +40,7 @@ use hir::intravisit::{self, NestedVisitorMap, Visitor};
 ///
 /// This is used to prevent the usage of in-band lifetimes in `Fn`/`fn` syntax.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable, Debug)]
-pub enum LifetimeDefOrigin {
+pub(crate) enum LifetimeDefOrigin {
     // Explicit binders like `fn foo<'a>(x: &'a u8)`
     Explicit,
     // In-band declarations like `fn foo(x: &'a u8)`
@@ -59,13 +59,13 @@ impl LifetimeDefOrigin {
 
 // This counts the no of times a lifetime is used
 #[derive(Clone, Copy, Debug)]
-pub enum LifetimeUseSet<'tcx> {
+pub(crate) enum LifetimeUseSet<'tcx> {
     One(&'tcx hir::Lifetime),
     Many,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable, Debug)]
-pub enum Region {
+pub(crate) enum Region {
     Static,
     EarlyBound(
         /* index */ u32,
@@ -165,14 +165,14 @@ impl Region {
 /// If two distinct values are inserted into a set, then it
 /// becomes `Many`, which can be used to detect ambiguities.
 #[derive(Copy, Clone, PartialEq, Eq, RustcEncodable, RustcDecodable, Debug)]
-pub enum Set1<T> {
+pub(crate) enum Set1<T> {
     Empty,
     One(T),
     Many,
 }
 
 impl<T: PartialEq> Set1<T> {
-    pub fn insert(&mut self, value: T) {
+    pub(crate) fn insert(&mut self, value: T) {
         if let Set1::Empty = *self {
             *self = Set1::One(value);
             return;
@@ -186,7 +186,7 @@ impl<T: PartialEq> Set1<T> {
     }
 }
 
-pub type ObjectLifetimeDefault = Set1<Region>;
+pub(crate) type ObjectLifetimeDefault = Set1<Region>;
 
 /// Maps the id of each lifetime reference to the lifetime decl
 /// that it corresponds to.
@@ -198,20 +198,20 @@ pub type ObjectLifetimeDefault = Set1<Region>;
 struct NamedRegionMap {
     // maps from every use of a named (not anonymous) lifetime to a
     // `Region` describing how that region is bound
-    pub defs: NodeMap<Region>,
+    pub(crate) defs: NodeMap<Region>,
 
     // the set of lifetime def ids that are late-bound; a region can
     // be late-bound if (a) it does NOT appear in a where-clause and
     // (b) it DOES appear in the arguments.
-    pub late_bound: NodeSet,
+    pub(crate) late_bound: NodeSet,
 
     // For each type and trait definition, maps type parameters
     // to the trait object lifetime defaults computed from them.
-    pub object_lifetime_defaults: NodeMap<Vec<ObjectLifetimeDefault>>,
+    pub(crate) object_lifetime_defaults: NodeMap<Vec<ObjectLifetimeDefault>>,
 }
 
 /// See `NamedRegionMap`.
-pub struct ResolveLifetimes {
+pub(crate) struct ResolveLifetimes {
     defs: FxHashMap<LocalDefId, Rc<FxHashMap<ItemLocalId, Region>>>,
     late_bound: FxHashMap<LocalDefId, Rc<FxHashSet<ItemLocalId>>>,
     object_lifetime_defaults:
@@ -325,7 +325,7 @@ type ScopeRef<'a> = &'a Scope<'a>;
 
 const ROOT_SCOPE: ScopeRef<'static> = &Scope::Root;
 
-pub fn provide(providers: &mut ty::maps::Providers) {
+pub(crate) fn provide(providers: &mut ty::maps::Providers) {
     *providers = ty::maps::Providers {
         resolve_lifetimes,
 

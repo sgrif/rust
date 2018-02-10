@@ -377,7 +377,7 @@ impl<'a, 'tcx: 'a> ItemLikeVisitor<'tcx> for CollectPrivateImplItemsVisitor<'a, 
 // We introduce a new-type here, so we can have a specialized HashStable
 // implementation for it.
 #[derive(Clone)]
-pub struct ReachableSet(pub Rc<NodeSet>);
+pub(crate) struct ReachableSet(pub(crate) Rc<NodeSet>);
 
 
 fn reachable_set<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, crate_num: CrateNum) -> ReachableSet {
@@ -428,7 +428,7 @@ fn reachable_set<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, crate_num: CrateNum) -> 
     ReachableSet(Rc::new(reachable_context.reachable_symbols))
 }
 
-pub fn provide(providers: &mut Providers) {
+pub(crate) fn provide(providers: &mut Providers) {
     *providers = Providers {
         reachable_set,
         ..*providers

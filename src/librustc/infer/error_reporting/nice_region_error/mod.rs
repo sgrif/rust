@@ -22,7 +22,7 @@ mod outlives_closure;
 mod util;
 
 impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
-    pub fn try_report_nice_region_error(&self, error: &RegionResolutionError<'tcx>) -> bool {
+    pub(crate) fn try_report_nice_region_error(&self, error: &RegionResolutionError<'tcx>) -> bool {
         match *error {
             ConcreteFailure(..) | SubSupConflict(..) => {}
             _ => return false,  // inapplicable
@@ -37,7 +37,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
     }
 }
 
-pub struct NiceRegionError<'cx, 'gcx: 'tcx, 'tcx: 'cx> {
+pub(crate) struct NiceRegionError<'cx, 'gcx: 'tcx, 'tcx: 'cx> {
     tcx: TyCtxt<'cx, 'gcx, 'tcx>,
     error: Option<RegionResolutionError<'tcx>>,
     regions: Option<(Span, ty::Region<'tcx>, ty::Region<'tcx>)>,
@@ -45,7 +45,7 @@ pub struct NiceRegionError<'cx, 'gcx: 'tcx, 'tcx: 'cx> {
 }
 
 impl<'cx, 'gcx, 'tcx> NiceRegionError<'cx, 'gcx, 'tcx> {
-    pub fn new(
+    pub(crate) fn new(
         tcx: TyCtxt<'cx, 'gcx, 'tcx>,
         error: RegionResolutionError<'tcx>,
         tables: Option<&'cx ty::TypeckTables<'tcx>>,
@@ -53,7 +53,7 @@ impl<'cx, 'gcx, 'tcx> NiceRegionError<'cx, 'gcx, 'tcx> {
         Self { tcx, error: Some(error), regions: None, tables }
     }
 
-    pub fn new_from_span(
+    pub(crate) fn new_from_span(
         tcx: TyCtxt<'cx, 'gcx, 'tcx>,
         span: Span,
         sub: ty::Region<'tcx>,
@@ -63,13 +63,13 @@ impl<'cx, 'gcx, 'tcx> NiceRegionError<'cx, 'gcx, 'tcx> {
         Self { tcx, error: None, regions: Some((span, sub, sup)), tables }
     }
 
-    pub fn try_report(&self) -> Option<ErrorReported> {
+    pub(crate) fn try_report(&self) -> Option<ErrorReported> {
         self.try_report_named_anon_conflict()
             .or_else(|| self.try_report_anon_anon_conflict())
             .or_else(|| self.try_report_outlives_closure())
     }
 
-    pub fn get_regions(&self) -> (Span, ty::Region<'tcx>, ty::Region<'tcx>) {
+    pub(crate) fn get_regions(&self) -> (Span, ty::Region<'tcx>, ty::Region<'tcx>) {
         match (&self.error, self.regions) {
             (&Some(ConcreteFailure(ref origin, sub, sup)), None) => (origin.span(), sub, sup),
             (&Some(SubSupConflict(_, ref origin, sub, _, sup)), None) => (origin.span(), sub, sup),

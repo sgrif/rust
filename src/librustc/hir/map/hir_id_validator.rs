@@ -14,7 +14,7 @@ use syntax::ast::NodeId;
 use hir::itemlikevisit::ItemLikeVisitor;
 use rustc_data_structures::fx::FxHashMap;
 
-pub fn check_crate<'hir>(hir_map: &hir::map::Map<'hir>) {
+pub(crate) fn check_crate<'hir>(hir_map: &hir::map::Map<'hir>) {
     let mut outer_visitor = OuterVisitor {
         hir_map,
         errors: vec![],

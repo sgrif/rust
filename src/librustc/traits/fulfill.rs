@@ -42,7 +42,7 @@ impl<'tcx> ForestObligation for PendingPredicateObligation<'tcx> {
 /// method `select_all_or_error` can be used to report any remaining
 /// ambiguous cases as errors.
 
-pub struct FulfillmentContext<'tcx> {
+pub(crate) struct FulfillmentContext<'tcx> {
     // A list of all obligations that have been registered with this
     // fulfillment context.
     predicates: ObligationForest<PendingPredicateObligation<'tcx>>,
@@ -62,21 +62,21 @@ pub struct FulfillmentContext<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub struct PendingPredicateObligation<'tcx> {
-    pub obligation: PredicateObligation<'tcx>,
-    pub stalled_on: Vec<Ty<'tcx>>,
+pub(crate) struct PendingPredicateObligation<'tcx> {
+    pub(crate) obligation: PredicateObligation<'tcx>,
+    pub(crate) stalled_on: Vec<Ty<'tcx>>,
 }
 
 impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
     /// Creates a new fulfillment context.
-    pub fn new() -> FulfillmentContext<'tcx> {
+    pub(crate) fn new() -> FulfillmentContext<'tcx> {
         FulfillmentContext {
             predicates: ObligationForest::new(),
             register_region_obligations: true
         }
     }
 
-    pub fn new_ignoring_regions() -> FulfillmentContext<'tcx> {
+    pub(crate) fn new_ignoring_regions() -> FulfillmentContext<'tcx> {
         FulfillmentContext {
             predicates: ObligationForest::new(),
             register_region_obligations: false
@@ -90,7 +90,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
     /// `SomeTrait` or a where clause that lets us unify `$0` with
     /// something concrete. If this fails, we'll unify `$0` with
     /// `projection_ty` again.
-    pub fn normalize_projection_type(&mut self,
+    pub(crate) fn normalize_projection_type(&mut self,
                                      infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                      param_env: ty::ParamEnv<'tcx>,
                                      projection_ty: ty::ProjectionTy<'tcx>,
@@ -123,7 +123,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
     /// Requires that `ty` must implement the trait with `def_id` in
     /// the given environment. This trait must not have any type
     /// parameters (except for `Self`).
-    pub fn register_bound(&mut self,
+    pub(crate) fn register_bound(&mut self,
                           infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                           param_env: ty::ParamEnv<'tcx>,
                           ty: Ty<'tcx>,
@@ -142,7 +142,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
         });
     }
 
-    pub fn register_predicate_obligation(&mut self,
+    pub(crate) fn register_predicate_obligation(&mut self,
                                          infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                          obligation: PredicateObligation<'tcx>)
     {
@@ -160,7 +160,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
         });
     }
 
-    pub fn register_predicate_obligations<I>(&mut self,
+    pub(crate) fn register_predicate_obligations<I>(&mut self,
                                              infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                              obligations: I)
         where I: IntoIterator<Item = PredicateObligation<'tcx>>
@@ -170,7 +170,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
         }
     }
 
-    pub fn select_all_or_error(&mut self,
+    pub(crate) fn select_all_or_error(&mut self,
                                infcx: &InferCtxt<'a, 'gcx, 'tcx>)
                                -> Result<(),Vec<FulfillmentError<'tcx>>>
     {
@@ -188,7 +188,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
         }
     }
 
-    pub fn select_where_possible(&mut self,
+    pub(crate) fn select_where_possible(&mut self,
                                  infcx: &InferCtxt<'a, 'gcx, 'tcx>)
                                  -> Result<(),Vec<FulfillmentError<'tcx>>>
     {
@@ -196,7 +196,7 @@ impl<'a, 'gcx, 'tcx> FulfillmentContext<'tcx> {
         self.select(&mut selcx)
     }
 
-    pub fn pending_obligations(&self) -> Vec<PendingPredicateObligation<'tcx>> {
+    pub(crate) fn pending_obligations(&self) -> Vec<PendingPredicateObligation<'tcx>> {
         self.predicates.pending_obligations()
     }
 

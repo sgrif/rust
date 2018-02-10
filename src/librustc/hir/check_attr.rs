@@ -197,7 +197,7 @@ impl<'a, 'tcx> Visitor<'tcx> for CheckAttrVisitor<'a, 'tcx> {
     }
 }
 
-pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let mut checker = CheckAttrVisitor { tcx };
     tcx.hir.krate().visit_all_item_likes(&mut checker.as_deep_visitor());
 }

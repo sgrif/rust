@@ -518,15 +518,15 @@ impl PrintContext {
     }
 }
 
-pub fn verbose() -> bool {
+pub(crate) fn verbose() -> bool {
     ty::tls::with(|tcx| tcx.sess.verbose())
 }
 
-pub fn identify_regions() -> bool {
+pub(crate) fn identify_regions() -> bool {
     ty::tls::with(|tcx| tcx.sess.opts.debugging_opts.identify_regions)
 }
 
-pub fn parameterized<F: fmt::Write>(f: &mut F,
+pub(crate) fn parameterized<F: fmt::Write>(f: &mut F,
                                     substs: &subst::Substs,
                                     did: DefId,
                                     projections: &[ty::ProjectionPredicate])

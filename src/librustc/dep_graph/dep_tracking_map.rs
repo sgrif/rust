@@ -19,20 +19,20 @@ use super::{DepKind, DepNodeIndex, DepGraph};
 /// A DepTrackingMap offers a subset of the `Map` API and ensures that
 /// we make calls to `read` and `write` as appropriate. We key the
 /// maps with a unique type for brevity.
-pub struct DepTrackingMap<M: DepTrackingMapConfig> {
+pub(crate) struct DepTrackingMap<M: DepTrackingMapConfig> {
     phantom: PhantomData<M>,
     graph: DepGraph,
     map: FxHashMap<M::Key, (M::Value, DepNodeIndex)>,
 }
 
-pub trait DepTrackingMapConfig {
+pub(crate) trait DepTrackingMapConfig {
     type Key: Eq + Hash + Clone;
     type Value: Clone;
     fn to_dep_kind() -> DepKind;
 }
 
 impl<M: DepTrackingMapConfig> DepTrackingMap<M> {
-    pub fn new(graph: DepGraph) -> DepTrackingMap<M> {
+    pub(crate) fn new(graph: DepGraph) -> DepTrackingMap<M> {
         DepTrackingMap {
             phantom: PhantomData,
             graph,

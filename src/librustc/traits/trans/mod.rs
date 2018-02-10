@@ -29,7 +29,7 @@ use ty::fold::{TypeFoldable, TypeFolder};
 /// that type check should guarantee to us that all nested
 /// obligations *could be* resolved if we wanted to.
 /// Assumes that this is run after the entire crate has been successfully type-checked.
-pub fn trans_fulfill_obligation<'a, 'tcx>(ty: TyCtxt<'a, 'tcx, 'tcx>,
+pub(crate) fn trans_fulfill_obligation<'a, 'tcx>(ty: TyCtxt<'a, 'tcx, 'tcx>,
                                           (param_env, trait_ref):
                                           (ty::ParamEnv<'tcx>, ty::PolyTraitRef<'tcx>))
                                           -> Vtable<'tcx, ()>
@@ -89,7 +89,7 @@ pub fn trans_fulfill_obligation<'a, 'tcx>(ty: TyCtxt<'a, 'tcx, 'tcx>,
 impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
     /// Monomorphizes a type from the AST by first applying the in-scope
     /// substitutions and then normalizing any associated types.
-    pub fn trans_apply_param_substs<T>(self,
+    pub(crate) fn trans_apply_param_substs<T>(self,
                                        param_substs: &Substs<'tcx>,
                                        value: &T)
                                        -> T
@@ -101,7 +101,7 @@ impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
         AssociatedTypeNormalizer::new(self).fold(&substituted)
     }
 
-    pub fn trans_apply_param_substs_env<T>(
+    pub(crate) fn trans_apply_param_substs_env<T>(
         self,
         param_substs: &Substs<'tcx>,
         param_env: ty::ParamEnv<'tcx>,
@@ -121,7 +121,7 @@ impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
         AssociatedTypeNormalizerEnv::new(self, param_env).fold(&substituted)
     }
 
-    pub fn trans_impl_self_ty(&self, def_id: DefId, substs: &'tcx Substs<'tcx>)
+    pub(crate) fn trans_impl_self_ty(&self, def_id: DefId, substs: &'tcx Substs<'tcx>)
                               -> Ty<'tcx>
     {
         self.trans_apply_param_substs(substs, &self.type_of(def_id))
@@ -196,7 +196,7 @@ impl<'a, 'gcx> TypeFolder<'gcx, 'gcx> for AssociatedTypeNormalizerEnv<'a, 'gcx> 
 }
 
 // Implement DepTrackingMapConfig for `trait_cache`
-pub struct TraitSelectionCache<'tcx> {
+pub(crate) struct TraitSelectionCache<'tcx> {
     data: PhantomData<&'tcx ()>
 }
 
@@ -210,7 +210,7 @@ impl<'tcx> DepTrackingMapConfig for TraitSelectionCache<'tcx> {
 
 // # Global Cache
 
-pub struct ProjectionCache<'gcx> {
+pub(crate) struct ProjectionCache<'gcx> {
     data: PhantomData<&'gcx ()>
 }
 

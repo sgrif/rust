@@ -21,25 +21,25 @@ use syntax_pos::Span;
 use syntax_pos::symbol::InternedString;
 
 #[derive(Clone, Debug)]
-pub struct OnUnimplementedFormatString(InternedString);
+pub(crate) struct OnUnimplementedFormatString(InternedString);
 
 #[derive(Debug)]
-pub struct OnUnimplementedDirective {
-    pub condition: Option<MetaItem>,
-    pub subcommands: Vec<OnUnimplementedDirective>,
-    pub message: Option<OnUnimplementedFormatString>,
-    pub label: Option<OnUnimplementedFormatString>,
-    pub note: Option<OnUnimplementedFormatString>,
+pub(crate) struct OnUnimplementedDirective {
+    pub(crate) condition: Option<MetaItem>,
+    pub(crate) subcommands: Vec<OnUnimplementedDirective>,
+    pub(crate) message: Option<OnUnimplementedFormatString>,
+    pub(crate) label: Option<OnUnimplementedFormatString>,
+    pub(crate) note: Option<OnUnimplementedFormatString>,
 }
 
-pub struct OnUnimplementedNote {
-    pub message: Option<String>,
-    pub label: Option<String>,
-    pub note: Option<String>,
+pub(crate) struct OnUnimplementedNote {
+    pub(crate) message: Option<String>,
+    pub(crate) label: Option<String>,
+    pub(crate) note: Option<String>,
 }
 
 impl OnUnimplementedNote {
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         OnUnimplementedNote { message: None, label: None, note: None }
     }
 }
@@ -61,7 +61,7 @@ fn parse_error(tcx: TyCtxt, span: Span,
 }
 
 impl<'a, 'gcx, 'tcx> OnUnimplementedDirective {
-    pub fn parse(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn parse(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                  trait_def_id: DefId,
                  items: &[NestedMetaItem],
                  span: Span,
@@ -142,7 +142,7 @@ impl<'a, 'gcx, 'tcx> OnUnimplementedDirective {
     }
 
 
-    pub fn of_item(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn of_item(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                    trait_def_id: DefId,
                    impl_def_id: DefId)
                    -> Result<Option<Self>, ErrorReported>
@@ -176,7 +176,7 @@ impl<'a, 'gcx, 'tcx> OnUnimplementedDirective {
         result
     }
 
-    pub fn evaluate(&self,
+    pub(crate) fn evaluate(&self,
                     tcx: TyCtxt<'a, 'gcx, 'tcx>,
                     trait_ref: ty::TraitRef<'tcx>,
                     options: &[(String, Option<String>)])
@@ -223,7 +223,7 @@ impl<'a, 'gcx, 'tcx> OnUnimplementedDirective {
 }
 
 impl<'a, 'gcx, 'tcx> OnUnimplementedFormatString {
-    pub fn try_parse(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn try_parse(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                      trait_def_id: DefId,
                      from: InternedString,
                      err_sp: Span)
@@ -280,7 +280,7 @@ impl<'a, 'gcx, 'tcx> OnUnimplementedFormatString {
         result
     }
 
-    pub fn format(&self,
+    pub(crate) fn format(&self,
                   tcx: TyCtxt<'a, 'gcx, 'tcx>,
                   trait_ref: ty::TraitRef<'tcx>)
                   -> String

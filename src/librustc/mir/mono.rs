@@ -19,14 +19,14 @@ use ich::{Fingerprint, StableHashingContext, NodeIdHashingMode};
 use std::hash::Hash;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
-pub enum MonoItem<'tcx> {
+pub(crate) enum MonoItem<'tcx> {
     Fn(Instance<'tcx>),
     Static(NodeId),
     GlobalAsm(NodeId),
 }
 
 impl<'tcx> MonoItem<'tcx> {
-    pub fn size_estimate<'a>(&self, tcx: &TyCtxt<'a, 'tcx, 'tcx>) -> usize {
+    pub(crate) fn size_estimate<'a>(&self, tcx: &TyCtxt<'a, 'tcx, 'tcx>) -> usize {
         match *self {
             MonoItem::Fn(instance) => {
                 // Estimate the size of a function based on how many statements
@@ -60,7 +60,7 @@ impl<'tcx> HashStable<StableHashingContext<'tcx>> for MonoItem<'tcx> {
     }
 }
 
-pub struct CodegenUnit<'tcx> {
+pub(crate) struct CodegenUnit<'tcx> {
     /// A name for this CGU. Incremental compilation requires that
     /// name be unique amongst **all** crates.  Therefore, it should
     /// contain something unique to this crate (e.g., a module path)
@@ -71,7 +71,7 @@ pub struct CodegenUnit<'tcx> {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Linkage {
+pub(crate) enum Linkage {
     External,
     AvailableExternally,
     LinkOnceAny,
@@ -100,7 +100,7 @@ impl_stable_hash_for!(enum self::Linkage {
 });
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Visibility {
+pub(crate) enum Visibility {
     Default,
     Hidden,
     Protected,
@@ -113,7 +113,7 @@ impl_stable_hash_for!(enum self::Visibility {
 });
 
 impl<'tcx> CodegenUnit<'tcx> {
-    pub fn new(name: InternedString) -> CodegenUnit<'tcx> {
+    pub(crate) fn new(name: InternedString) -> CodegenUnit<'tcx> {
         CodegenUnit {
             name: name,
             items: FxHashMap(),
@@ -121,25 +121,25 @@ impl<'tcx> CodegenUnit<'tcx> {
         }
     }
 
-    pub fn name(&self) -> &InternedString {
+    pub(crate) fn name(&self) -> &InternedString {
         &self.name
     }
 
-    pub fn set_name(&mut self, name: InternedString) {
+    pub(crate) fn set_name(&mut self, name: InternedString) {
         self.name = name;
     }
 
-    pub fn items(&self) -> &FxHashMap<MonoItem<'tcx>, (Linkage, Visibility)> {
+    pub(crate) fn items(&self) -> &FxHashMap<MonoItem<'tcx>, (Linkage, Visibility)> {
         &self.items
     }
 
-    pub fn items_mut(&mut self)
+    pub(crate) fn items_mut(&mut self)
         -> &mut FxHashMap<MonoItem<'tcx>, (Linkage, Visibility)>
     {
         &mut self.items
     }
 
-    pub fn mangle_name(human_readable_name: &str) -> String {
+    pub(crate) fn mangle_name(human_readable_name: &str) -> String {
         // We generate a 80 bit hash from the name. This should be enough to
         // avoid collisions and is still reasonably short for filenames.
         let mut hasher = StableHasher::new();
@@ -149,18 +149,18 @@ impl<'tcx> CodegenUnit<'tcx> {
         base_n::encode(hash, base_n::CASE_INSENSITIVE)
     }
 
-    pub fn estimate_size<'a>(&mut self, tcx: &TyCtxt<'a, 'tcx, 'tcx>) {
+    pub(crate) fn estimate_size<'a>(&mut self, tcx: &TyCtxt<'a, 'tcx, 'tcx>) {
         // Estimate the size of a codegen unit as (approximately) the number of MIR
         // statements it corresponds to.
         self.size_estimate = Some(self.items.keys().map(|mi| mi.size_estimate(tcx)).sum());
     }
 
-    pub fn size_estimate(&self) -> usize {
+    pub(crate) fn size_estimate(&self) -> usize {
         // Should only be called if `estimate_size` has previously been called.
         self.size_estimate.expect("estimate_size must be called before getting a size_estimate")
     }
 
-    pub fn modify_size_estimate(&mut self, delta: usize) {
+    pub(crate) fn modify_size_estimate(&mut self, delta: usize) {
         assert!(self.size_estimate.is_some());
         if let Some(size_estimate) = self.size_estimate {
             self.size_estimate = Some(size_estimate + delta);
@@ -194,17 +194,17 @@ impl<'tcx> HashStable<StableHashingContext<'tcx>> for CodegenUnit<'tcx> {
 }
 
 #[derive(Clone, Default)]
-pub struct Stats {
-    pub n_glues_created: usize,
-    pub n_null_glues: usize,
-    pub n_real_glues: usize,
-    pub n_fns: usize,
-    pub n_inlines: usize,
-    pub n_closures: usize,
-    pub n_llvm_insns: usize,
-    pub llvm_insns: FxHashMap<String, usize>,
+pub(crate) struct Stats {
+    pub(crate) n_glues_created: usize,
+    pub(crate) n_null_glues: usize,
+    pub(crate) n_real_glues: usize,
+    pub(crate) n_fns: usize,
+    pub(crate) n_inlines: usize,
+    pub(crate) n_closures: usize,
+    pub(crate) n_llvm_insns: usize,
+    pub(crate) llvm_insns: FxHashMap<String, usize>,
     // (ident, llvm-instructions)
-    pub fn_stats: Vec<(String, usize)>,
+    pub(crate) fn_stats: Vec<(String, usize)>,
 }
 
 impl_stable_hash_for!(struct self::Stats {
@@ -220,7 +220,7 @@ impl_stable_hash_for!(struct self::Stats {
 });
 
 impl Stats {
-    pub fn extend(&mut self, stats: Stats) {
+    pub(crate) fn extend(&mut self, stats: Stats) {
         self.n_glues_created += stats.n_glues_created;
         self.n_null_glues += stats.n_null_glues;
         self.n_real_glues += stats.n_real_glues;

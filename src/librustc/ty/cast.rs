@@ -17,7 +17,7 @@ use syntax::ast;
 
 /// Types that are represented as ints.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum IntTy {
+pub(crate) enum IntTy {
     U(ast::UintTy),
     I,
     Ivar,
@@ -28,7 +28,7 @@ pub enum IntTy {
 
 // Valid types for the result of a non-coercion cast
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum CastTy<'tcx> {
+pub(crate) enum CastTy<'tcx> {
     /// Various types that are represented as ints and handled mostly
     /// in the same way, merged for easier matching.
     Int(IntTy),
@@ -44,7 +44,7 @@ pub enum CastTy<'tcx> {
 
 /// Cast Kind. See RFC 401 (or librustc_typeck/check/cast.rs)
 #[derive(Copy, Clone, Debug, RustcEncodable, RustcDecodable)]
-pub enum CastKind {
+pub(crate) enum CastKind {
     CoercionCast,
     PtrPtrCast,
     PtrAddrCast,
@@ -59,7 +59,7 @@ pub enum CastKind {
 }
 
 impl<'tcx> CastTy<'tcx> {
-    pub fn from_ty(t: Ty<'tcx>) -> Option<CastTy<'tcx>> {
+    pub(crate) fn from_ty(t: Ty<'tcx>) -> Option<CastTy<'tcx>> {
         match t.sty {
             ty::TyBool => Some(CastTy::Int(IntTy::Bool)),
             ty::TyChar => Some(CastTy::Int(IntTy::Char)),

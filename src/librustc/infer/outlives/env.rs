@@ -36,14 +36,14 @@ use syntax_pos::Span;
 /// For example, NLL has no need of `RegionRelations`, and is solely
 /// interested in the `OutlivesEnvironment`. -nmatsakis
 #[derive(Clone)]
-pub struct OutlivesEnvironment<'tcx> {
+pub(crate) struct OutlivesEnvironment<'tcx> {
     param_env: ty::ParamEnv<'tcx>,
     free_region_map: FreeRegionMap<'tcx>,
     region_bound_pairs: Vec<(ty::Region<'tcx>, GenericKind<'tcx>)>,
 }
 
 impl<'a, 'gcx: 'tcx, 'tcx: 'a> OutlivesEnvironment<'tcx> {
-    pub fn new(param_env: ty::ParamEnv<'tcx>) -> Self {
+    pub(crate) fn new(param_env: ty::ParamEnv<'tcx>) -> Self {
         let mut env = OutlivesEnvironment {
             param_env,
             free_region_map: FreeRegionMap::new(),
@@ -56,17 +56,17 @@ impl<'a, 'gcx: 'tcx, 'tcx: 'a> OutlivesEnvironment<'tcx> {
     }
 
     /// Borrows current value of the `free_region_map`.
-    pub fn free_region_map(&self) -> &FreeRegionMap<'tcx> {
+    pub(crate) fn free_region_map(&self) -> &FreeRegionMap<'tcx> {
         &self.free_region_map
     }
 
     /// Borrows current value of the `region_bound_pairs`.
-    pub fn region_bound_pairs(&self) -> &[(ty::Region<'tcx>, GenericKind<'tcx>)] {
+    pub(crate) fn region_bound_pairs(&self) -> &[(ty::Region<'tcx>, GenericKind<'tcx>)] {
         &self.region_bound_pairs
     }
 
     /// Returns ownership of the `free_region_map`.
-    pub fn into_free_region_map(self) -> FreeRegionMap<'tcx> {
+    pub(crate) fn into_free_region_map(self) -> FreeRegionMap<'tcx> {
         self.free_region_map
     }
 
@@ -107,12 +107,12 @@ impl<'a, 'gcx: 'tcx, 'tcx: 'a> OutlivesEnvironment<'tcx> {
     /// seems like it'd be readily fixed if we wanted. There are
     /// similar leaks around givens that seem equally suspicious, to
     /// be honest. --nmatsakis
-    pub fn push_snapshot_pre_closure(&self) -> usize {
+    pub(crate) fn push_snapshot_pre_closure(&self) -> usize {
         self.region_bound_pairs.len()
     }
 
     /// See `push_snapshot_pre_closure`.
-    pub fn pop_snapshot_post_closure(&mut self, len: usize) {
+    pub(crate) fn pop_snapshot_post_closure(&mut self, len: usize) {
         self.region_bound_pairs.truncate(len);
     }
 
@@ -132,7 +132,7 @@ impl<'a, 'gcx: 'tcx, 'tcx: 'a> OutlivesEnvironment<'tcx> {
     /// add those assumptions into the outlives-environment.
     ///
     /// Tests: `src/test/compile-fail/regions-free-region-ordering-*.rs`
-    pub fn add_implied_bounds(
+    pub(crate) fn add_implied_bounds(
         &mut self,
         infcx: &InferCtxt<'a, 'gcx, 'tcx>,
         fn_sig_tys: &[Ty<'tcx>],

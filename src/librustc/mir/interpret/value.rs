@@ -6,14 +6,14 @@ use super::{EvalResult, MemoryPointer, PointerArithmetic};
 use syntax::ast::FloatTy;
 use rustc_const_math::ConstFloat;
 
-pub fn bytes_to_f32(bits: u128) -> ConstFloat {
+pub(crate) fn bytes_to_f32(bits: u128) -> ConstFloat {
     ConstFloat {
         bits,
         ty: FloatTy::F32,
     }
 }
 
-pub fn bytes_to_f64(bits: u128) -> ConstFloat {
+pub(crate) fn bytes_to_f64(bits: u128) -> ConstFloat {
     ConstFloat {
         bits,
         ty: FloatTy::F64,
@@ -30,7 +30,7 @@ pub fn bytes_to_f64(bits: u128) -> ConstFloat {
 /// primitive values (`ByValPair`). It allows Miri to avoid making allocations for checked binary
 /// operations and fat pointers. This idea was taken from rustc's trans.
 #[derive(Clone, Copy, Debug)]
-pub enum Value {
+pub(crate) enum Value {
     ByRef(Pointer, Align),
     ByVal(PrimVal),
     ByValPair(PrimVal, PrimVal),
@@ -44,22 +44,22 @@ pub enum Value {
 /// the representation of pointers. Also all the sites that convert between primvals and pointers
 /// are explicit now (and rare!)
 #[derive(Clone, Copy, Debug)]
-pub struct Pointer {
+pub(crate) struct Pointer {
     primval: PrimVal,
 }
 
 impl<'tcx> Pointer {
-    pub fn null() -> Self {
+    pub(crate) fn null() -> Self {
         PrimVal::Bytes(0).into()
     }
-    pub fn to_ptr(self) -> EvalResult<'tcx, MemoryPointer> {
+    pub(crate) fn to_ptr(self) -> EvalResult<'tcx, MemoryPointer> {
         self.primval.to_ptr()
     }
-    pub fn into_inner_primval(self) -> PrimVal {
+    pub(crate) fn into_inner_primval(self) -> PrimVal {
         self.primval
     }
 
-    pub fn signed_offset<C: HasDataLayout>(self, i: i64, cx: C) -> EvalResult<'tcx, Self> {
+    pub(crate) fn signed_offset<C: HasDataLayout>(self, i: i64, cx: C) -> EvalResult<'tcx, Self> {
         let layout = cx.data_layout();
         match self.primval {
             PrimVal::Bytes(b) => {
@@ -73,7 +73,7 @@ impl<'tcx> Pointer {
         }
     }
 
-    pub fn offset<C: HasDataLayout>(self, i: u64, cx: C) -> EvalResult<'tcx, Self> {
+    pub(crate) fn offset<C: HasDataLayout>(self, i: u64, cx: C) -> EvalResult<'tcx, Self> {
         let layout = cx.data_layout();
         match self.primval {
             PrimVal::Bytes(b) => {
@@ -87,7 +87,7 @@ impl<'tcx> Pointer {
         }
     }
 
-    pub fn wrapping_signed_offset<C: HasDataLayout>(self, i: i64, cx: C) -> EvalResult<'tcx, Self> {
+    pub(crate) fn wrapping_signed_offset<C: HasDataLayout>(self, i: i64, cx: C) -> EvalResult<'tcx, Self> {
         let layout = cx.data_layout();
         match self.primval {
             PrimVal::Bytes(b) => {
@@ -101,7 +101,7 @@ impl<'tcx> Pointer {
         }
     }
 
-    pub fn is_null(self) -> EvalResult<'tcx, bool> {
+    pub(crate) fn is_null(self) -> EvalResult<'tcx, bool> {
         match self.primval {
             PrimVal::Bytes(b) => Ok(b == 0),
             PrimVal::Ptr(_) => Ok(false),
@@ -109,15 +109,15 @@ impl<'tcx> Pointer {
         }
     }
 
-    pub fn to_value_with_len(self, len: u64) -> Value {
+    pub(crate) fn to_value_with_len(self, len: u64) -> Value {
         Value::ByValPair(self.primval, PrimVal::from_u128(len as u128))
     }
 
-    pub fn to_value_with_vtable(self, vtable: MemoryPointer) -> Value {
+    pub(crate) fn to_value_with_vtable(self, vtable: MemoryPointer) -> Value {
         Value::ByValPair(self.primval, PrimVal::Ptr(vtable))
     }
 
-    pub fn to_value(self) -> Value {
+    pub(crate) fn to_value(self) -> Value {
         Value::ByVal(self.primval)
     }
 }
@@ -139,7 +139,7 @@ impl ::std::convert::From<MemoryPointer> for Pointer {
 /// size. Like a range of bytes in an `Allocation`, a `PrimVal` can either represent the raw bytes
 /// of a simple value, a pointer into another `Allocation`, or be undefined.
 #[derive(Clone, Copy, Debug)]
-pub enum PrimVal {
+pub(crate) enum PrimVal {
     /// The raw bytes of a simple value.
     Bytes(u128),
 
@@ -154,7 +154,7 @@ pub enum PrimVal {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PrimValKind {
+pub(crate) enum PrimValKind {
     I8, I16, I32, I64, I128,
     U8, U16, U32, U64, U128,
     F32, F64,
@@ -164,27 +164,27 @@ pub enum PrimValKind {
 }
 
 impl<'tcx> PrimVal {
-    pub fn from_u128(n: u128) -> Self {
+    pub(crate) fn from_u128(n: u128) -> Self {
         PrimVal::Bytes(n)
     }
 
-    pub fn from_i128(n: i128) -> Self {
+    pub(crate) fn from_i128(n: i128) -> Self {
         PrimVal::Bytes(n as u128)
     }
 
-    pub fn from_float(f: ConstFloat) -> Self {
+    pub(crate) fn from_float(f: ConstFloat) -> Self {
         PrimVal::Bytes(f.bits)
     }
 
-    pub fn from_bool(b: bool) -> Self {
+    pub(crate) fn from_bool(b: bool) -> Self {
         PrimVal::Bytes(b as u128)
     }
 
-    pub fn from_char(c: char) -> Self {
+    pub(crate) fn from_char(c: char) -> Self {
         PrimVal::Bytes(c as u128)
     }
 
-    pub fn to_bytes(self) -> EvalResult<'tcx, u128> {
+    pub(crate) fn to_bytes(self) -> EvalResult<'tcx, u128> {
         match self {
             PrimVal::Bytes(b) => Ok(b),
             PrimVal::Ptr(_) => err!(ReadPointerAsBytes),
@@ -192,7 +192,7 @@ impl<'tcx> PrimVal {
         }
     }
 
-    pub fn to_ptr(self) -> EvalResult<'tcx, MemoryPointer> {
+    pub(crate) fn to_ptr(self) -> EvalResult<'tcx, MemoryPointer> {
         match self {
             PrimVal::Bytes(_) => err!(ReadBytesAsPointer),
             PrimVal::Ptr(p) => Ok(p),
@@ -200,65 +200,65 @@ impl<'tcx> PrimVal {
         }
     }
 
-    pub fn is_bytes(self) -> bool {
+    pub(crate) fn is_bytes(self) -> bool {
         match self {
             PrimVal::Bytes(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_ptr(self) -> bool {
+    pub(crate) fn is_ptr(self) -> bool {
         match self {
             PrimVal::Ptr(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_undef(self) -> bool {
+    pub(crate) fn is_undef(self) -> bool {
         match self {
             PrimVal::Undef => true,
             _ => false,
         }
     }
 
-    pub fn to_u128(self) -> EvalResult<'tcx, u128> {
+    pub(crate) fn to_u128(self) -> EvalResult<'tcx, u128> {
         self.to_bytes()
     }
 
-    pub fn to_u64(self) -> EvalResult<'tcx, u64> {
+    pub(crate) fn to_u64(self) -> EvalResult<'tcx, u64> {
         self.to_bytes().map(|b| {
             assert_eq!(b as u64 as u128, b);
             b as u64
         })
     }
 
-    pub fn to_i32(self) -> EvalResult<'tcx, i32> {
+    pub(crate) fn to_i32(self) -> EvalResult<'tcx, i32> {
         self.to_bytes().map(|b| {
             assert_eq!(b as i32 as u128, b);
             b as i32
         })
     }
 
-    pub fn to_i128(self) -> EvalResult<'tcx, i128> {
+    pub(crate) fn to_i128(self) -> EvalResult<'tcx, i128> {
         self.to_bytes().map(|b| b as i128)
     }
 
-    pub fn to_i64(self) -> EvalResult<'tcx, i64> {
+    pub(crate) fn to_i64(self) -> EvalResult<'tcx, i64> {
         self.to_bytes().map(|b| {
             assert_eq!(b as i64 as u128, b);
             b as i64
         })
     }
 
-    pub fn to_f32(self) -> EvalResult<'tcx, ConstFloat> {
+    pub(crate) fn to_f32(self) -> EvalResult<'tcx, ConstFloat> {
         self.to_bytes().map(bytes_to_f32)
     }
 
-    pub fn to_f64(self) -> EvalResult<'tcx, ConstFloat> {
+    pub(crate) fn to_f64(self) -> EvalResult<'tcx, ConstFloat> {
         self.to_bytes().map(bytes_to_f64)
     }
 
-    pub fn to_bool(self) -> EvalResult<'tcx, bool> {
+    pub(crate) fn to_bool(self) -> EvalResult<'tcx, bool> {
         match self.to_bytes()? {
             0 => Ok(false),
             1 => Ok(true),
@@ -268,7 +268,7 @@ impl<'tcx> PrimVal {
 }
 
 impl PrimValKind {
-    pub fn is_int(self) -> bool {
+    pub(crate) fn is_int(self) -> bool {
         use self::PrimValKind::*;
         match self {
             I8 | I16 | I32 | I64 | I128 | U8 | U16 | U32 | U64 | U128 => true,
@@ -276,7 +276,7 @@ impl PrimValKind {
         }
     }
 
-    pub fn is_signed_int(self) -> bool {
+    pub(crate) fn is_signed_int(self) -> bool {
         use self::PrimValKind::*;
         match self {
             I8 | I16 | I32 | I64 | I128 => true,
@@ -284,7 +284,7 @@ impl PrimValKind {
         }
     }
 
-    pub fn is_float(self) -> bool {
+    pub(crate) fn is_float(self) -> bool {
         use self::PrimValKind::*;
         match self {
             F32 | F64 => true,
@@ -292,7 +292,7 @@ impl PrimValKind {
         }
     }
 
-    pub fn from_uint_size(size: u64) -> Self {
+    pub(crate) fn from_uint_size(size: u64) -> Self {
         match size {
             1 => PrimValKind::U8,
             2 => PrimValKind::U16,
@@ -303,7 +303,7 @@ impl PrimValKind {
         }
     }
 
-    pub fn from_int_size(size: u64) -> Self {
+    pub(crate) fn from_int_size(size: u64) -> Self {
         match size {
             1 => PrimValKind::I8,
             2 => PrimValKind::I16,
@@ -314,7 +314,7 @@ impl PrimValKind {
         }
     }
 
-    pub fn is_ptr(self) -> bool {
+    pub(crate) fn is_ptr(self) -> bool {
         use self::PrimValKind::*;
         match self {
             Ptr | FnPtr => true,

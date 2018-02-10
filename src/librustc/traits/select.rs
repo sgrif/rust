@@ -64,7 +64,7 @@ impl<'tcx> SnapshotVecDelegate for InferredObligationsSnapshotVecDelegate<'tcx> 
     fn reverse(_: &mut Vec<Self::Value>, _: Self::Undo) {}
 }
 
-pub struct SelectionContext<'cx, 'gcx: 'cx+'tcx, 'tcx: 'cx> {
+pub(crate) struct SelectionContext<'cx, 'gcx: 'cx+'tcx, 'tcx: 'cx> {
     infcx: &'cx InferCtxt<'cx, 'gcx, 'tcx>,
 
     /// Freshener used specifically for skolemizing entries on the
@@ -96,7 +96,7 @@ pub struct SelectionContext<'cx, 'gcx: 'cx+'tcx, 'tcx: 'cx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum IntercrateAmbiguityCause {
+pub(crate) enum IntercrateAmbiguityCause {
     DownstreamCrate {
         trait_desc: String,
         self_desc: Option<String>,
@@ -110,12 +110,12 @@ pub enum IntercrateAmbiguityCause {
 impl IntercrateAmbiguityCause {
     /// Emits notes when the overlap is caused by complex intercrate ambiguities.
     /// See #23980 for details.
-    pub fn add_intercrate_ambiguity_hint<'a, 'tcx>(&self,
+    pub(crate) fn add_intercrate_ambiguity_hint<'a, 'tcx>(&self,
                                                    err: &mut ::errors::DiagnosticBuilder) {
         err.note(&self.intercrate_ambiguity_hint());
     }
 
-    pub fn intercrate_ambiguity_hint(&self) -> String {
+    pub(crate) fn intercrate_ambiguity_hint(&self) -> String {
         match self {
             &IntercrateAmbiguityCause::DownstreamCrate { ref trait_desc, ref self_desc } => {
                 let self_desc = if let &Some(ref ty) = self_desc {
@@ -147,7 +147,7 @@ struct TraitObligationStack<'prev, 'tcx: 'prev> {
 }
 
 #[derive(Clone)]
-pub struct SelectionCache<'tcx> {
+pub(crate) struct SelectionCache<'tcx> {
     hashmap: RefCell<FxHashMap<ty::TraitRef<'tcx>,
                                WithDepNode<SelectionResult<'tcx, SelectionCandidate<'tcx>>>>>,
 }
@@ -201,11 +201,11 @@ pub struct SelectionCache<'tcx> {
 /// inference variables. The can lead to inference making "leaps of logic",
 /// for example in this situation:
 ///
-///    pub trait Foo<T> { fn foo(&self) -> T; }
+///    pub(crate) trait Foo<T> { fn foo(&self) -> T; }
 ///    impl<T> Foo<()> for T { fn foo(&self) { } }
 ///    impl Foo<bool> for bool { fn foo(&self) -> bool { *self } }
 ///
-///    pub fn foo<T>(t: T) where T: Foo<bool> {
+///    pub(crate) fn foo<T>(t: T) where T: Foo<bool> {
 ///       println!("{:?}", <T as Foo<_>>::foo(&t));
 ///    }
 ///    fn main() { foo(false); }
@@ -354,12 +354,12 @@ enum EvaluationResult {
     /// For example, suppose we have this:
     ///
     /// ```rust,ignore (pseudo-Rust)
-    ///     pub trait Trait { fn xyz(); }
+    ///     pub(crate) trait Trait { fn xyz(); }
     ///     // This impl is "useless", but we can still have
     ///     // an `impl Trait for SomeUnsizedType` somewhere.
     ///     impl<T: Trait + Sized> Trait for T { fn xyz() {} }
     ///
-    ///     pub fn foo<T: Trait + ?Sized>() {
+    ///     pub(crate) fn foo<T: Trait + ?Sized>() {
     ///         <T as Trait>::xyz();
     ///     }
     /// ```
@@ -412,12 +412,12 @@ impl EvaluationResult {
 }
 
 #[derive(Clone)]
-pub struct EvaluationCache<'tcx> {
+pub(crate) struct EvaluationCache<'tcx> {
     hashmap: RefCell<FxHashMap<ty::PolyTraitRef<'tcx>, WithDepNode<EvaluationResult>>>
 }
 
 impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
-    pub fn new(infcx: &'cx InferCtxt<'cx, 'gcx, 'tcx>) -> SelectionContext<'cx, 'gcx, 'tcx> {
+    pub(crate) fn new(infcx: &'cx InferCtxt<'cx, 'gcx, 'tcx>) -> SelectionContext<'cx, 'gcx, 'tcx> {
         SelectionContext {
             infcx,
             freshener: infcx.freshener(),
@@ -427,7 +427,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
         }
     }
 
-    pub fn intercrate(infcx: &'cx InferCtxt<'cx, 'gcx, 'tcx>,
+    pub(crate) fn intercrate(infcx: &'cx InferCtxt<'cx, 'gcx, 'tcx>,
                       mode: IntercrateMode) -> SelectionContext<'cx, 'gcx, 'tcx> {
         debug!("intercrate({:?})", mode);
         SelectionContext {
@@ -444,7 +444,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
     /// this until we detect a coherence error because it can lead to
     /// false overflow results (#47139) and because it costs
     /// computation time.
-    pub fn enable_tracking_intercrate_ambiguity_causes(&mut self) {
+    pub(crate) fn enable_tracking_intercrate_ambiguity_causes(&mut self) {
         assert!(self.intercrate.is_some());
         assert!(self.intercrate_ambiguity_causes.is_none());
         self.intercrate_ambiguity_causes = Some(vec![]);
@@ -454,20 +454,20 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
     /// Gets the intercrate ambiguity causes collected since tracking
     /// was enabled and disables tracking at the same time. If
     /// tracking is not enabled, just returns an empty vector.
-    pub fn take_intercrate_ambiguity_causes(&mut self) -> Vec<IntercrateAmbiguityCause> {
+    pub(crate) fn take_intercrate_ambiguity_causes(&mut self) -> Vec<IntercrateAmbiguityCause> {
         assert!(self.intercrate.is_some());
         self.intercrate_ambiguity_causes.take().unwrap_or(vec![])
     }
 
-    pub fn infcx(&self) -> &'cx InferCtxt<'cx, 'gcx, 'tcx> {
+    pub(crate) fn infcx(&self) -> &'cx InferCtxt<'cx, 'gcx, 'tcx> {
         self.infcx
     }
 
-    pub fn tcx(&self) -> TyCtxt<'cx, 'gcx, 'tcx> {
+    pub(crate) fn tcx(&self) -> TyCtxt<'cx, 'gcx, 'tcx> {
         self.infcx.tcx
     }
 
-    pub fn closure_typer(&self) -> &'cx InferCtxt<'cx, 'gcx, 'tcx> {
+    pub(crate) fn closure_typer(&self) -> &'cx InferCtxt<'cx, 'gcx, 'tcx> {
         self.infcx
     }
 
@@ -528,7 +528,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
 
     /// Attempts to satisfy the obligation. If successful, this will affect the surrounding
     /// type environment by performing unification.
-    pub fn select(&mut self, obligation: &TraitObligation<'tcx>)
+    pub(crate) fn select(&mut self, obligation: &TraitObligation<'tcx>)
                   -> SelectionResult<'tcx, Selection<'tcx>> {
         debug!("select({:?})", obligation);
         assert!(!obligation.predicate.has_escaping_regions());
@@ -600,7 +600,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
     // we can be sure it does not.
 
     /// Evaluates whether the obligation `obligation` can be satisfied (by any means).
-    pub fn evaluate_obligation(&mut self,
+    pub(crate) fn evaluate_obligation(&mut self,
                                obligation: &PredicateObligation<'tcx>)
                                -> bool
     {
@@ -616,7 +616,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
     /// Evaluates whether the obligation `obligation` can be satisfied,
     /// and returns `false` if not certain. However, this is not entirely
     /// accurate if inference variables are involved.
-    pub fn evaluate_obligation_conservatively(&mut self,
+    pub(crate) fn evaluate_obligation_conservatively(&mut self,
                                               obligation: &PredicateObligation<'tcx>)
                                               -> bool
     {
@@ -931,7 +931,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
     /// - it also appears in the backtrace at some position `X`; and,
     /// - all the predicates at positions `X..` between `X` an the top are
     ///   also defaulted traits.
-    pub fn coinductive_match<I>(&mut self, cycle: I) -> bool
+    pub(crate) fn coinductive_match<I>(&mut self, cycle: I) -> bool
         where I: Iterator<Item=ty::Predicate<'tcx>>
     {
         let mut cycle = cycle;
@@ -3299,7 +3299,7 @@ impl<'cx, 'gcx, 'tcx> SelectionContext<'cx, 'gcx, 'tcx> {
 
 impl<'tcx> TraitObligation<'tcx> {
     #[allow(unused_comparisons)]
-    pub fn derived_cause(&self,
+    pub(crate) fn derived_cause(&self,
                         variant: fn(DerivedObligationCause<'tcx>) -> ObligationCauseCode<'tcx>)
                         -> ObligationCause<'tcx>
     {
@@ -3332,7 +3332,7 @@ impl<'tcx> TraitObligation<'tcx> {
 }
 
 impl<'tcx> SelectionCache<'tcx> {
-    pub fn new() -> SelectionCache<'tcx> {
+    pub(crate) fn new() -> SelectionCache<'tcx> {
         SelectionCache {
             hashmap: RefCell::new(FxHashMap())
         }
@@ -3340,7 +3340,7 @@ impl<'tcx> SelectionCache<'tcx> {
 }
 
 impl<'tcx> EvaluationCache<'tcx> {
-    pub fn new() -> EvaluationCache<'tcx> {
+    pub(crate) fn new() -> EvaluationCache<'tcx> {
         EvaluationCache {
             hashmap: RefCell::new(FxHashMap())
         }
@@ -3393,17 +3393,17 @@ impl<'o,'tcx> fmt::Debug for TraitObligationStack<'o,'tcx> {
 }
 
 #[derive(Clone)]
-pub struct WithDepNode<T> {
+pub(crate) struct WithDepNode<T> {
     dep_node: DepNodeIndex,
     cached_value: T
 }
 
 impl<T: Clone> WithDepNode<T> {
-    pub fn new(dep_node: DepNodeIndex, cached_value: T) -> Self {
+    pub(crate) fn new(dep_node: DepNodeIndex, cached_value: T) -> Self {
         WithDepNode { dep_node, cached_value }
     }
 
-    pub fn get(&self, tcx: TyCtxt) -> T {
+    pub(crate) fn get(&self, tcx: TyCtxt) -> T {
         tcx.dep_graph.read_index(self.dep_node);
         self.cached_value.clone()
     }

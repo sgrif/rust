@@ -176,7 +176,7 @@ enum ImplTraitContext {
     Disallowed,
 }
 
-pub fn lower_crate(sess: &Session,
+pub(crate) fn lower_crate(sess: &Session,
                    cstore: &CrateStore,
                    dep_graph: &DepGraph,
                    krate: &Crate,

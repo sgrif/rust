@@ -47,7 +47,7 @@ use util::nodemap::{FxHashMap, FxHashSet};
 use syntax_pos::{DUMMY_SP, Span};
 
 impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
-    pub fn report_fulfillment_errors(&self,
+    pub(crate) fn report_fulfillment_errors(&self,
                                      errors: &Vec<FulfillmentError<'tcx>>,
                                      body_id: Option<hir::BodyId>) {
         #[derive(Debug)]
@@ -456,7 +456,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// whose result could not be truly determined and thus we can't say
     /// if the program type checks or not -- and they are unusual
     /// occurrences in any case.
-    pub fn report_overflow_error<T>(&self,
+    pub(crate) fn report_overflow_error<T>(&self,
                                     obligation: &Obligation<'tcx, T>,
                                     suggest_increasing_limit: bool) -> !
         where T: fmt::Display + TypeFoldable<'tcx>
@@ -483,7 +483,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// that we can give a more helpful error message (and, in particular,
     /// we do not suggest increasing the overflow limit, which is not
     /// going to help).
-    pub fn report_overflow_error_cycle(&self, cycle: &[PredicateObligation<'tcx>]) -> ! {
+    pub(crate) fn report_overflow_error_cycle(&self, cycle: &[PredicateObligation<'tcx>]) -> ! {
         let cycle = self.resolve_type_vars_if_possible(&cycle.to_owned());
         assert!(cycle.len() > 0);
 
@@ -492,7 +492,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         self.report_overflow_error(&cycle[0], false);
     }
 
-    pub fn report_extra_impl_obligation(&self,
+    pub(crate) fn report_extra_impl_obligation(&self,
                                         error_span: Span,
                                         item_name: ast::Name,
                                         _impl_item_def_id: DefId,
@@ -531,7 +531,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn report_selection_error(&self,
+    pub(crate) fn report_selection_error(&self,
                                   obligation: &PredicateObligation<'tcx>,
                                   error: &SelectionError<'tcx>)
     {
@@ -1014,7 +1014,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn recursive_type_with_infinite_size_error(self,
+    pub(crate) fn recursive_type_with_infinite_size_error(self,
                                                    type_def_id: DefId)
                                                    -> DiagnosticBuilder<'tcx>
     {
@@ -1031,7 +1031,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         err
     }
 
-    pub fn report_object_safety_error(self,
+    pub(crate) fn report_object_safety_error(self,
                                       span: Span,
                                       trait_def_id: DefId,
                                       violations: Vec<ObjectSafetyViolation>)

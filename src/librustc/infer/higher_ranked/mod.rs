@@ -26,12 +26,12 @@ use ty::relate::{Relate, RelateResult, TypeRelation};
 use syntax_pos::Span;
 use util::nodemap::{FxHashMap, FxHashSet};
 
-pub struct HrMatchResult<U> {
-    pub value: U,
+pub(crate) struct HrMatchResult<U> {
+    pub(crate) value: U,
 }
 
 impl<'a, 'gcx, 'tcx> CombineFields<'a, 'gcx, 'tcx> {
-    pub fn higher_ranked_sub<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
+    pub(crate) fn higher_ranked_sub<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
                                 -> RelateResult<'tcx, Binder<T>>
         where T: Relate<'tcx>
     {
@@ -97,7 +97,7 @@ impl<'a, 'gcx, 'tcx> CombineFields<'a, 'gcx, 'tcx> {
     /// NB. It should not happen that there are LBR appearing in `U`
     /// that do not appear in `T`. If that happens, those regions are
     /// unconstrained, and this routine replaces them with `'static`.
-    pub fn higher_ranked_match<T, U>(&mut self,
+    pub(crate) fn higher_ranked_match<T, U>(&mut self,
                                      a_pair: &Binder<(T, U)>,
                                      b_match: &T,
                                      a_is_expected: bool)
@@ -201,7 +201,7 @@ impl<'a, 'gcx, 'tcx> CombineFields<'a, 'gcx, 'tcx> {
         });
     }
 
-    pub fn higher_ranked_lub<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
+    pub(crate) fn higher_ranked_lub<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
                                 -> RelateResult<'tcx, Binder<T>>
         where T: Relate<'tcx>
     {
@@ -291,7 +291,7 @@ impl<'a, 'gcx, 'tcx> CombineFields<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn higher_ranked_glb<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
+    pub(crate) fn higher_ranked_glb<T>(&mut self, a: &Binder<T>, b: &Binder<T>, a_is_expected: bool)
                                 -> RelateResult<'tcx, Binder<T>>
         where T: Relate<'tcx>
     {
@@ -581,7 +581,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// needed (but is also permitted).
     ///
     /// See `README.md` for more details.
-    pub fn skolemize_late_bound_regions<T>(&self,
+    pub(crate) fn skolemize_late_bound_regions<T>(&self,
                                            binder: &ty::Binder<T>,
                                            snapshot: &CombinedSnapshot)
                                            -> (T, SkolemizationMap<'tcx>)
@@ -605,7 +605,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// in `skol_map` would "escape" -- meaning that they are related to
     /// other regions in some way. If so, the higher-ranked subtyping doesn't
     /// hold. See `README.md` for more details.
-    pub fn leak_check(&self,
+    pub(crate) fn leak_check(&self,
                       overly_polymorphic: bool,
                       _span: Span,
                       skol_map: &SkolemizationMap<'tcx>,
@@ -682,7 +682,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// replace `'0` with a late-bound region `'a`.  The depth is matched
     /// to the depth of the predicate, in this case 1, so that the final
     /// predicate is `for<'a> &'a int : Clone`.
-    pub fn plug_leaks<T>(&self,
+    pub(crate) fn plug_leaks<T>(&self,
                          skol_map: SkolemizationMap<'tcx>,
                          snapshot: &CombinedSnapshot,
                          value: T) -> T
@@ -768,7 +768,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     /// popping happens as part of the rollback).
     ///
     /// Note: popping also occurs implicitly as part of `leak_check`.
-    pub fn pop_skolemized(&self,
+    pub(crate) fn pop_skolemized(&self,
                           skol_map: SkolemizationMap<'tcx>,
                           snapshot: &CombinedSnapshot)
     {

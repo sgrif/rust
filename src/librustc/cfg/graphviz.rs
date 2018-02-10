@@ -19,15 +19,15 @@ use cfg;
 use hir;
 use ty::TyCtxt;
 
-pub type Node<'a> = (cfg::CFGIndex, &'a cfg::CFGNode);
-pub type Edge<'a> = &'a cfg::CFGEdge;
+pub(crate) type Node<'a> = (cfg::CFGIndex, &'a cfg::CFGNode);
+pub(crate) type Edge<'a> = &'a cfg::CFGEdge;
 
-pub struct LabelledCFG<'a, 'tcx: 'a> {
-    pub tcx: TyCtxt<'a, 'tcx, 'tcx>,
-    pub cfg: &'a cfg::CFG,
-    pub name: String,
+pub(crate) struct LabelledCFG<'a, 'tcx: 'a> {
+    pub(crate) tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) cfg: &'a cfg::CFG,
+    pub(crate) name: String,
     /// `labelled_edges` controls whether we emit labels on the edges
-    pub labelled_edges: bool,
+    pub(crate) labelled_edges: bool,
 }
 
 impl<'a, 'tcx> LabelledCFG<'a, 'tcx> {

@@ -19,13 +19,13 @@ use ty::error::TypeError;
 use ty::relate::{Relate, RelateResult, TypeRelation};
 
 /// "Least upper bound" (common supertype)
-pub struct Lub<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
+pub(crate) struct Lub<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
     fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>,
     a_is_expected: bool,
 }
 
 impl<'combine, 'infcx, 'gcx, 'tcx> Lub<'combine, 'infcx, 'gcx, 'tcx> {
-    pub fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
+    pub(crate) fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
         -> Lub<'combine, 'infcx, 'gcx, 'tcx>
     {
         Lub { fields: fields, a_is_expected: a_is_expected }

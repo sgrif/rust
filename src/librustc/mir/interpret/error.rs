@@ -13,9 +13,9 @@ use syntax::codemap::Span;
 use backtrace::Backtrace;
 
 #[derive(Debug)]
-pub struct EvalError<'tcx> {
-    pub kind: EvalErrorKind<'tcx>,
-    pub backtrace: Option<Backtrace>,
+pub(crate) struct EvalError<'tcx> {
+    pub(crate) kind: EvalErrorKind<'tcx>,
+    pub(crate) backtrace: Option<Backtrace>,
 }
 
 impl<'tcx> From<EvalErrorKind<'tcx>> for EvalError<'tcx> {
@@ -32,7 +32,7 @@ impl<'tcx> From<EvalErrorKind<'tcx>> for EvalError<'tcx> {
 }
 
 #[derive(Debug)]
-pub enum EvalErrorKind<'tcx> {
+pub(crate) enum EvalErrorKind<'tcx> {
     /// This variant is used by machines to signal their own errors that do not
     /// match an existing variant
     MachineError(Box<Error>),
@@ -126,7 +126,7 @@ pub enum EvalErrorKind<'tcx> {
     TypeckError,
 }
 
-pub type EvalResult<'tcx, T = ()> = Result<T, EvalError<'tcx>>;
+pub(crate) type EvalResult<'tcx, T = ()> = Result<T, EvalError<'tcx>>;
 
 impl<'tcx> Error for EvalError<'tcx> {
     fn description(&self) -> &str {

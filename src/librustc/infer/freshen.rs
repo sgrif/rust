@@ -50,14 +50,14 @@ use std::collections::hash_map::Entry;
 use super::InferCtxt;
 use super::unify_key::ToType;
 
-pub struct TypeFreshener<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct TypeFreshener<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
     freshen_count: u32,
     freshen_map: FxHashMap<ty::InferTy, Ty<'tcx>>,
 }
 
 impl<'a, 'gcx, 'tcx> TypeFreshener<'a, 'gcx, 'tcx> {
-    pub fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>)
+    pub(crate) fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>)
                -> TypeFreshener<'a, 'gcx, 'tcx> {
         TypeFreshener {
             infcx,

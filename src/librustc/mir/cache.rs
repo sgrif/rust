@@ -18,7 +18,7 @@ use mir::{Mir, BasicBlock};
 use rustc_serialize as serialize;
 
 #[derive(Clone, Debug)]
-pub struct Cache {
+pub(crate) struct Cache {
     predecessors: RefCell<Option<IndexVec<BasicBlock, Vec<BasicBlock>>>>
 }
 
@@ -44,18 +44,18 @@ impl<'gcx> HashStable<StableHashingContext<'gcx>> for Cache {
 }
 
 impl Cache {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Cache {
             predecessors: RefCell::new(None)
         }
     }
 
-    pub fn invalidate(&self) {
+    pub(crate) fn invalidate(&self) {
         // FIXME: consider being more fine-grained
         *self.predecessors.borrow_mut() = None;
     }
 
-    pub fn predecessors(&self, mir: &Mir) -> Ref<IndexVec<BasicBlock, Vec<BasicBlock>>> {
+    pub(crate) fn predecessors(&self, mir: &Mir) -> Ref<IndexVec<BasicBlock, Vec<BasicBlock>>> {
         if self.predecessors.borrow().is_none() {
             *self.predecessors.borrow_mut() = Some(calculate_predecessors(mir));
         }

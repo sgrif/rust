@@ -23,32 +23,32 @@ use rustc_data_structures::stable_hasher::{HashStable, StableHasher,
 use std::rc::Rc;
 
 /// A trait's definition with type information.
-pub struct TraitDef {
-    pub def_id: DefId,
+pub(crate) struct TraitDef {
+    pub(crate) def_id: DefId,
 
-    pub unsafety: hir::Unsafety,
+    pub(crate) unsafety: hir::Unsafety,
 
     /// If `true`, then this trait had the `#[rustc_paren_sugar]`
     /// attribute, indicating that it should be used with `Foo()`
     /// sugar. This is a temporary thing -- eventually any trait will
     /// be usable with the sugar (or without it).
-    pub paren_sugar: bool,
+    pub(crate) paren_sugar: bool,
 
-    pub has_auto_impl: bool,
+    pub(crate) has_auto_impl: bool,
 
     /// The ICH of this trait's DefPath, cached here so it doesn't have to be
     /// recomputed all the time.
-    pub def_path_hash: DefPathHash,
+    pub(crate) def_path_hash: DefPathHash,
 }
 
-pub struct TraitImpls {
+pub(crate) struct TraitImpls {
     blanket_impls: Vec<DefId>,
     /// Impls indexed by their simplified self-type, for fast lookup.
     non_blanket_impls: FxHashMap<fast_reject::SimplifiedType, Vec<DefId>>,
 }
 
 impl<'a, 'gcx, 'tcx> TraitDef {
-    pub fn new(def_id: DefId,
+    pub(crate) fn new(def_id: DefId,
                unsafety: hir::Unsafety,
                paren_sugar: bool,
                has_auto_impl: bool,
@@ -63,7 +63,7 @@ impl<'a, 'gcx, 'tcx> TraitDef {
         }
     }
 
-    pub fn ancestors(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn ancestors(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                      of_impl: DefId)
                      -> specialization_graph::Ancestors {
         specialization_graph::ancestors(tcx, self.def_id, of_impl)
@@ -71,7 +71,7 @@ impl<'a, 'gcx, 'tcx> TraitDef {
 }
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn for_each_impl<F: FnMut(DefId)>(self, def_id: DefId, mut f: F) {
+    pub(crate) fn for_each_impl<F: FnMut(DefId)>(self, def_id: DefId, mut f: F) {
         let impls = self.trait_impls_of(def_id);
 
         for &impl_def_id in impls.blanket_impls.iter() {
@@ -87,7 +87,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 
     /// Iterate over every impl that could possibly match the
     /// self-type `self_ty`.
-    pub fn for_each_relevant_impl<F: FnMut(DefId)>(self,
+    pub(crate) fn for_each_relevant_impl<F: FnMut(DefId)>(self,
                                                    def_id: DefId,
                                                    self_ty: Ty<'tcx>,
                                                    mut f: F)

@@ -29,7 +29,7 @@ use std::io;
 //
 // For some more information, see this comment:
 //   https://github.com/rust-lang/rust/issues/25505#issuecomment-102876737
-pub fn fix_windows_verbatim_for_gcc(p: &Path) -> PathBuf {
+pub(crate) fn fix_windows_verbatim_for_gcc(p: &Path) -> PathBuf {
     if !cfg!(windows) {
         return p.to_path_buf();
     }
@@ -56,7 +56,7 @@ pub fn fix_windows_verbatim_for_gcc(p: &Path) -> PathBuf {
     }
 }
 
-pub enum LinkOrCopy {
+pub(crate) enum LinkOrCopy {
     Link,
     Copy,
 }
@@ -64,7 +64,7 @@ pub enum LinkOrCopy {
 /// Copy `p` into `q`, preferring to use hard-linking if possible. If
 /// `q` already exists, it is removed first.
 /// The result indicates which of the two operations has been performed.
-pub fn link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(p: P, q: Q) -> io::Result<LinkOrCopy> {
+pub(crate) fn link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(p: P, q: Q) -> io::Result<LinkOrCopy> {
     let p = p.as_ref();
     let q = q.as_ref();
     if q.exists() {
@@ -83,7 +83,7 @@ pub fn link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(p: P, q: Q) -> io::Result<Li
 }
 
 #[derive(Debug)]
-pub enum RenameOrCopyRemove {
+pub(crate) enum RenameOrCopyRemove {
     Rename,
     CopyRemove,
 }
@@ -91,7 +91,7 @@ pub enum RenameOrCopyRemove {
 /// Rename `p` into `q`, preferring to use `rename` if possible.
 /// If `rename` fails (rename may fail for reasons such as crossing
 /// filesystem), fallback to copy & remove
-pub fn rename_or_copy_remove<P: AsRef<Path>, Q: AsRef<Path>>(p: P,
+pub(crate) fn rename_or_copy_remove<P: AsRef<Path>, Q: AsRef<Path>>(p: P,
                                                              q: Q)
                                                              -> io::Result<RenameOrCopyRemove> {
     let p = p.as_ref();

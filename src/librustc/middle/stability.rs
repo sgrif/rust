@@ -11,7 +11,7 @@
 //! A pass that annotates every item and method with its stability level,
 //! propagating default levels lexically from parent to children ast nodes.
 
-pub use self::StabilityLevel::*;
+pub(crate) use self::StabilityLevel::*;
 
 use lint;
 use hir::def::Def;
@@ -35,13 +35,13 @@ use std::mem::replace;
 use std::cmp::Ordering;
 
 #[derive(RustcEncodable, RustcDecodable, PartialEq, PartialOrd, Clone, Copy, Debug, Eq, Hash)]
-pub enum StabilityLevel {
+pub(crate) enum StabilityLevel {
     Unstable,
     Stable,
 }
 
 impl StabilityLevel {
-    pub fn from_attr_level(level: &attr::StabilityLevel) -> Self {
+    pub(crate) fn from_attr_level(level: &attr::StabilityLevel) -> Self {
         if level.is_stable() { Stable } else { Unstable }
     }
 }
@@ -58,9 +58,9 @@ enum AnnotationKind {
 
 /// An entry in the `depr_map`.
 #[derive(Clone)]
-pub struct DeprecationEntry {
+pub(crate) struct DeprecationEntry {
     /// The metadata of the attribute associated with this entry.
-    pub attr: Deprecation,
+    pub(crate) attr: Deprecation,
     /// The def id where the attr was originally attached. `None` for non-local
     /// `DefId`'s.
     origin: Option<HirId>,
@@ -79,14 +79,14 @@ impl DeprecationEntry {
         }
     }
 
-    pub fn external(attr: Deprecation) -> DeprecationEntry {
+    pub(crate) fn external(attr: Deprecation) -> DeprecationEntry {
         DeprecationEntry {
             attr,
             origin: None,
         }
     }
 
-    pub fn same_origin(&self, other: &DeprecationEntry) -> bool {
+    pub(crate) fn same_origin(&self, other: &DeprecationEntry) -> bool {
         match (self.origin, other.origin) {
             (Some(o1), Some(o2)) => o1 == o2,
             _ => false
@@ -95,7 +95,7 @@ impl DeprecationEntry {
 }
 
 /// A stability index, giving the stability level for items and methods.
-pub struct Index<'tcx> {
+pub(crate) struct Index<'tcx> {
     /// This is mostly a cache, except the stabilities of local items
     /// are filled by the annotator.
     stab_map: FxHashMap<HirId, &'tcx Stability>,
@@ -395,7 +395,7 @@ impl<'a, 'tcx> Visitor<'tcx> for MissingStabilityAnnotations<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Index<'tcx> {
-    pub fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>) -> Index<'tcx> {
+    pub(crate) fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>) -> Index<'tcx> {
         let is_staged_api =
             tcx.sess.opts.debugging_opts.force_unstable_if_unmarked ||
             tcx.sess.features.borrow().staged_api;
@@ -454,18 +454,18 @@ impl<'a, 'tcx> Index<'tcx> {
         return index
     }
 
-    pub fn local_stability(&self, id: HirId) -> Option<&'tcx Stability> {
+    pub(crate) fn local_stability(&self, id: HirId) -> Option<&'tcx Stability> {
         self.stab_map.get(&id).cloned()
     }
 
-    pub fn local_deprecation_entry(&self, id: HirId) -> Option<DeprecationEntry> {
+    pub(crate) fn local_deprecation_entry(&self, id: HirId) -> Option<DeprecationEntry> {
         self.depr_map.get(&id).cloned()
     }
 }
 
 /// Cross-references the feature names of unstable APIs with enabled
 /// features and possibly prints errors.
-pub fn check_unstable_api_usage<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_unstable_api_usage<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let mut checker = Checker { tcx: tcx };
     tcx.hir.krate().visit_all_item_likes(&mut checker.as_deep_visitor());
 }
@@ -486,7 +486,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
                     ty::TraitContainer(trait_def_id) => {
                         // Trait methods do not declare visibility (even
                         // for visibility info in cstore). Use containing
-                        // trait instead, so methods of pub traits are
+                        // trait instead, so methods of pub(crate) traits are
                         // themselves considered pub.
                         def_id = trait_def_id;
                     }
@@ -499,7 +499,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         let visibility = self.visibility(def_id);
 
         match visibility {
-            // must check stability for pub items.
+            // must check stability for pub(crate) items.
             ty::Visibility::Public => false,
 
             // these are not visible outside crate; therefore
@@ -509,7 +509,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn check_stability(self, def_id: DefId, id: NodeId, span: Span) {
+    pub(crate) fn check_stability(self, def_id: DefId, id: NodeId, span: Span) {
         if span.allows_unstable() {
             debug!("stability: \
                     skipping span={:?} since it is internal", span);
@@ -712,7 +712,7 @@ impl<'a, 'tcx> Visitor<'tcx> for Checker<'a, 'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn lookup_deprecation(self, id: DefId) -> Option<Deprecation> {
+    pub(crate) fn lookup_deprecation(self, id: DefId) -> Option<Deprecation> {
         self.lookup_deprecation_entry(id).map(|depr| depr.attr)
     }
 }
@@ -720,7 +720,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 /// Given the list of enabled features that were not language features (i.e. that
 /// were expected to be library features), and the list of features used from
 /// libraries, identify activated features that don't exist and error about them.
-pub fn check_unused_or_stable_features<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_unused_or_stable_features<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let sess = &tcx.sess;
 
     let access_levels = &tcx.privacy_access_levels(LOCAL_CRATE);

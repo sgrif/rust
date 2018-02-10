@@ -30,20 +30,20 @@ enum InCrate {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum Conflict {
+pub(crate) enum Conflict {
     Upstream,
     Downstream { used_to_be_broken: bool }
 }
 
-pub struct OverlapResult<'tcx> {
-    pub impl_header: ty::ImplHeader<'tcx>,
-    pub intercrate_ambiguity_causes: Vec<IntercrateAmbiguityCause>,
+pub(crate) struct OverlapResult<'tcx> {
+    pub(crate) impl_header: ty::ImplHeader<'tcx>,
+    pub(crate) intercrate_ambiguity_causes: Vec<IntercrateAmbiguityCause>,
 }
 
 /// If there are types that satisfy both impls, invokes `on_overlap`
 /// with a suitably-freshened `ImplHeader` with those types
 /// substituted. Otherwise, invokes `no_overlap`.
-pub fn overlapping_impls<'gcx, F1, F2, R>(
+pub(crate) fn overlapping_impls<'gcx, F1, F2, R>(
     tcx: TyCtxt<'_, 'gcx, 'gcx>,
     impl1_def_id: DefId,
     impl2_def_id: DefId,
@@ -163,7 +163,7 @@ fn overlap<'cx, 'gcx, 'tcx>(selcx: &mut SelectionContext<'cx, 'gcx, 'tcx>,
     Some(OverlapResult { impl_header, intercrate_ambiguity_causes })
 }
 
-pub fn trait_ref_is_knowable<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn trait_ref_is_knowable<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                              trait_ref: ty::TraitRef<'tcx>)
                                              -> Option<Conflict>
 {
@@ -209,13 +209,13 @@ pub fn trait_ref_is_knowable<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
     }
 }
 
-pub fn trait_ref_is_local_or_fundamental<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn trait_ref_is_local_or_fundamental<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                                          trait_ref: ty::TraitRef<'tcx>)
                                                          -> bool {
     trait_ref.def_id.krate == LOCAL_CRATE || tcx.has_attr(trait_ref.def_id, "fundamental")
 }
 
-pub enum OrphanCheckErr<'tcx> {
+pub(crate) enum OrphanCheckErr<'tcx> {
     NoLocalInputType,
     UncoveredTy(Ty<'tcx>),
 }
@@ -226,7 +226,7 @@ pub enum OrphanCheckErr<'tcx> {
 ///
 /// 1. All type parameters in `Self` must be "covered" by some local type constructor.
 /// 2. Some local type must appear in `Self`.
-pub fn orphan_check<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn orphan_check<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                     impl_def_id: DefId)
                                     -> Result<(), OrphanCheckErr<'tcx>>
 {

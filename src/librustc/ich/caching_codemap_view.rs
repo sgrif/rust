@@ -23,14 +23,14 @@ struct CacheEntry {
 }
 
 #[derive(Clone)]
-pub struct CachingCodemapView<'cm> {
+pub(crate) struct CachingCodemapView<'cm> {
     codemap: &'cm CodeMap,
     line_cache: [CacheEntry; 3],
     time_stamp: usize,
 }
 
 impl<'cm> CachingCodemapView<'cm> {
-    pub fn new(codemap: &'cm CodeMap) -> CachingCodemapView<'cm> {
+    pub(crate) fn new(codemap: &'cm CodeMap) -> CachingCodemapView<'cm> {
         let files = codemap.files();
         let first_file = files[0].clone();
         let entry = CacheEntry {
@@ -49,7 +49,7 @@ impl<'cm> CachingCodemapView<'cm> {
         }
     }
 
-    pub fn byte_pos_to_line_and_col(&mut self,
+    pub(crate) fn byte_pos_to_line_and_col(&mut self,
                                     pos: BytePos)
                                     -> Option<(Rc<FileMap>, usize, BytePos)> {
         self.time_stamp += 1;

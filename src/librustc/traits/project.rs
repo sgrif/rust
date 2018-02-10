@@ -38,7 +38,7 @@ use util::common::FN_OUTPUT_NAME;
 /// Depending on the stage of compilation, we want projection to be
 /// more or less conservative.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Reveal {
+pub(crate) enum Reveal {
     /// At type-checking time, we refuse to project any associated
     /// type that is marked `default`. Non-`default` ("final") types
     /// are always projected. This is necessary in general for
@@ -77,18 +77,18 @@ pub enum Reveal {
     All,
 }
 
-pub type PolyProjectionObligation<'tcx> =
+pub(crate) type PolyProjectionObligation<'tcx> =
     Obligation<'tcx, ty::PolyProjectionPredicate<'tcx>>;
 
-pub type ProjectionObligation<'tcx> =
+pub(crate) type ProjectionObligation<'tcx> =
     Obligation<'tcx, ty::ProjectionPredicate<'tcx>>;
 
-pub type ProjectionTyObligation<'tcx> =
+pub(crate) type ProjectionTyObligation<'tcx> =
     Obligation<'tcx, ty::ProjectionTy<'tcx>>;
 
 /// When attempting to resolve `<T as TraitRef>::Name` ...
 #[derive(Debug)]
-pub enum ProjectionTyError<'tcx> {
+pub(crate) enum ProjectionTyError<'tcx> {
     /// ...we found multiple sources of information and couldn't resolve the ambiguity.
     TooManyCandidates,
 
@@ -97,8 +97,8 @@ pub enum ProjectionTyError<'tcx> {
 }
 
 #[derive(Clone)]
-pub struct MismatchedProjectionTypes<'tcx> {
-    pub err: ty::error::TypeError<'tcx>
+pub(crate) struct MismatchedProjectionTypes<'tcx> {
+    pub(crate) err: ty::error::TypeError<'tcx>
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -124,7 +124,7 @@ struct ProjectionTyCandidateSet<'tcx> {
 ///
 /// If successful, this may result in additional obligations. Also returns
 /// the projection cache key used to track these additional obligations.
-pub fn poly_project_and_unify_type<'cx, 'gcx, 'tcx>(
+pub(crate) fn poly_project_and_unify_type<'cx, 'gcx, 'tcx>(
     selcx: &mut SelectionContext<'cx, 'gcx, 'tcx>,
     obligation: &PolyProjectionObligation<'tcx>)
     -> Result<Option<Vec<PredicateObligation<'tcx>>>,
@@ -199,7 +199,7 @@ fn project_and_unify_type<'cx, 'gcx, 'tcx>(
 /// them with a fully resolved type where possible. The return value
 /// combines the normalized result and any additional obligations that
 /// were incurred as result.
-pub fn normalize<'a, 'b, 'gcx, 'tcx, T>(selcx: &'a mut SelectionContext<'b, 'gcx, 'tcx>,
+pub(crate) fn normalize<'a, 'b, 'gcx, 'tcx, T>(selcx: &'a mut SelectionContext<'b, 'gcx, 'tcx>,
                                         param_env: ty::ParamEnv<'tcx>,
                                         cause: ObligationCause<'tcx>,
                                         value: &T)
@@ -210,7 +210,7 @@ pub fn normalize<'a, 'b, 'gcx, 'tcx, T>(selcx: &'a mut SelectionContext<'b, 'gcx
 }
 
 /// As `normalize`, but with a custom depth.
-pub fn normalize_with_depth<'a, 'b, 'gcx, 'tcx, T>(
+pub(crate) fn normalize_with_depth<'a, 'b, 'gcx, 'tcx, T>(
     selcx: &'a mut SelectionContext<'b, 'gcx, 'tcx>,
     param_env: ty::ParamEnv<'tcx>,
     cause: ObligationCause<'tcx>,
@@ -382,15 +382,15 @@ impl<'a, 'b, 'gcx, 'tcx> TypeFolder<'gcx, 'tcx> for AssociatedTypeNormalizer<'a,
 }
 
 #[derive(Clone)]
-pub struct Normalized<'tcx,T> {
-    pub value: T,
-    pub obligations: Vec<PredicateObligation<'tcx>>,
+pub(crate) struct Normalized<'tcx,T> {
+    pub(crate) value: T,
+    pub(crate) obligations: Vec<PredicateObligation<'tcx>>,
 }
 
-pub type NormalizedTy<'tcx> = Normalized<'tcx, Ty<'tcx>>;
+pub(crate) type NormalizedTy<'tcx> = Normalized<'tcx, Ty<'tcx>>;
 
 impl<'tcx,T> Normalized<'tcx,T> {
-    pub fn with<U>(self, value: U) -> Normalized<'tcx,U> {
+    pub(crate) fn with<U>(self, value: U) -> Normalized<'tcx,U> {
         Normalized { value: value, obligations: self.obligations }
     }
 }
@@ -401,7 +401,7 @@ impl<'tcx,T> Normalized<'tcx,T> {
 /// there are unresolved type variables in the projection, we will
 /// substitute a fresh type variable `$X` and generate a new
 /// obligation `<T as Trait>::Item == $X` for later.
-pub fn normalize_projection_type<'a, 'b, 'gcx, 'tcx>(
+pub(crate) fn normalize_projection_type<'a, 'b, 'gcx, 'tcx>(
     selcx: &'a mut SelectionContext<'b, 'gcx, 'tcx>,
     param_env: ty::ParamEnv<'tcx>,
     projection_ty: ty::ProjectionTy<'tcx>,
@@ -1548,17 +1548,17 @@ fn assoc_ty_def<'cx, 'gcx, 'tcx>(
 /// FIXME: we probably also want some sort of cross-infcx cache here to
 /// reduce the amount of duplication. Let's see what we get with the Chalk
 /// reforms.
-pub struct ProjectionCache<'tcx> {
+pub(crate) struct ProjectionCache<'tcx> {
     map: SnapshotMap<ProjectionCacheKey<'tcx>, ProjectionCacheEntry<'tcx>>,
 }
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
-pub struct ProjectionCacheKey<'tcx> {
+pub(crate) struct ProjectionCacheKey<'tcx> {
     ty: ty::ProjectionTy<'tcx>
 }
 
 impl<'cx, 'gcx, 'tcx> ProjectionCacheKey<'tcx> {
-    pub fn from_poly_projection_predicate(selcx: &mut SelectionContext<'cx, 'gcx, 'tcx>,
+    pub(crate) fn from_poly_projection_predicate(selcx: &mut SelectionContext<'cx, 'gcx, 'tcx>,
                                           predicate: &ty::PolyProjectionPredicate<'tcx>)
                                           -> Option<Self>
     {
@@ -1585,30 +1585,30 @@ enum ProjectionCacheEntry<'tcx> {
 }
 
 // NB: intentionally not Clone
-pub struct ProjectionCacheSnapshot {
+pub(crate) struct ProjectionCacheSnapshot {
     snapshot: Snapshot,
 }
 
 impl<'tcx> ProjectionCache<'tcx> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         ProjectionCache {
             map: SnapshotMap::new()
         }
     }
 
-    pub fn snapshot(&mut self) -> ProjectionCacheSnapshot {
+    pub(crate) fn snapshot(&mut self) -> ProjectionCacheSnapshot {
         ProjectionCacheSnapshot { snapshot: self.map.snapshot() }
     }
 
-    pub fn rollback_to(&mut self, snapshot: ProjectionCacheSnapshot) {
+    pub(crate) fn rollback_to(&mut self, snapshot: ProjectionCacheSnapshot) {
         self.map.rollback_to(snapshot.snapshot);
     }
 
-    pub fn rollback_skolemized(&mut self, snapshot: &ProjectionCacheSnapshot) {
+    pub(crate) fn rollback_skolemized(&mut self, snapshot: &ProjectionCacheSnapshot) {
         self.map.partial_rollback(&snapshot.snapshot, &|k| k.ty.has_re_skol());
     }
 
-    pub fn commit(&mut self, snapshot: ProjectionCacheSnapshot) {
+    pub(crate) fn commit(&mut self, snapshot: ProjectionCacheSnapshot) {
         self.map.commit(snapshot.snapshot);
     }
 
@@ -1637,7 +1637,7 @@ impl<'tcx> ProjectionCache<'tcx> {
     /// complete, so they won't have to be re-computed (this is OK to do in a
     /// snapshot - if the snapshot is rolled back, the obligations will be
     /// marked as incomplete again).
-    pub fn complete(&mut self, key: ProjectionCacheKey<'tcx>) {
+    pub(crate) fn complete(&mut self, key: ProjectionCacheKey<'tcx>) {
         let ty = match self.map.get(&key) {
             Some(&ProjectionCacheEntry::NormalizedTy(ref ty)) => {
                 debug!("ProjectionCacheEntry::complete({:?}) - completing {:?}",

@@ -197,7 +197,7 @@ macro_rules! define_maps {
         }
 
         impl<$tcx> Maps<$tcx> {
-            pub fn new(providers: IndexVec<CrateNum, Providers<$tcx>>)
+            pub(crate) fn new(providers: IndexVec<CrateNum, Providers<$tcx>>)
                        -> Self {
                 Maps {
                     providers,
@@ -209,18 +209,18 @@ macro_rules! define_maps {
 
         #[allow(bad_style)]
         #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-        pub enum Query<$tcx> {
+        pub(crate) enum Query<$tcx> {
             $($(#[$attr])* $name($K)),*
         }
 
         #[allow(bad_style)]
         #[derive(Clone, Debug, PartialEq, Eq)]
-        pub enum QueryMsg {
+        pub(crate) enum QueryMsg {
             $($name(Option<String>)),*
         }
 
         impl<$tcx> Query<$tcx> {
-            pub fn describe(&self, tcx: TyCtxt) -> String {
+            pub(crate) fn describe(&self, tcx: TyCtxt) -> String {
                 let (r, name) = match *self {
                     $(Query::$name(key) => {
                         (queries::$name::describe(tcx, key), stringify!($name))
@@ -234,11 +234,11 @@ macro_rules! define_maps {
             }
         }
 
-        pub mod queries {
+        pub(crate) mod queries {
             use std::marker::PhantomData;
 
             $(#[allow(bad_style)]
-            pub struct $name<$tcx> {
+            pub(crate) struct $name<$tcx> {
                 data: PhantomData<&$tcx ()>
             })*
         }
@@ -361,7 +361,7 @@ macro_rules! define_maps {
             /// side-effects -- e.g., in order to report errors for erroneous programs.
             ///
             /// Note: The optimization is only available during incr. comp.
-            pub fn ensure(tcx: TyCtxt<'a, $tcx, 'lcx>, key: $K) -> () {
+            pub(crate) fn ensure(tcx: TyCtxt<'a, $tcx, 'lcx>, key: $K) -> () {
                 let dep_node = Self::to_dep_node(tcx, &key);
 
                 // Ensuring an "input" or anonymous query makes no sense
@@ -521,7 +521,7 @@ macro_rules! define_maps {
                    dep_node_index))
             }
 
-            pub fn try_get(tcx: TyCtxt<'a, $tcx, 'lcx>, span: Span, key: $K)
+            pub(crate) fn try_get(tcx: TyCtxt<'a, $tcx, 'lcx>, span: Span, key: $K)
                            -> Result<$V, DiagnosticBuilder<'a>> {
                 match Self::try_get_with(tcx, span, key) {
                     Ok(e) => Ok(e),
@@ -531,9 +531,9 @@ macro_rules! define_maps {
         })*
 
         #[derive(Copy, Clone)]
-        pub struct TyCtxtAt<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
-            pub tcx: TyCtxt<'a, 'gcx, 'tcx>,
-            pub span: Span,
+        pub(crate) struct TyCtxtAt<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+            pub(crate) tcx: TyCtxt<'a, 'gcx, 'tcx>,
+            pub(crate) span: Span,
         }
 
         impl<'a, 'gcx, 'tcx> Deref for TyCtxtAt<'a, 'gcx, 'tcx> {
@@ -546,7 +546,7 @@ macro_rules! define_maps {
         impl<'a, $tcx, 'lcx> TyCtxt<'a, $tcx, 'lcx> {
             /// Return a transparent wrapper for `TyCtxt` which uses
             /// `span` as the location of queries performed through it.
-            pub fn at(self, span: Span) -> TyCtxtAt<'a, $tcx, 'lcx> {
+            pub(crate) fn at(self, span: Span) -> TyCtxtAt<'a, $tcx, 'lcx> {
                 TyCtxtAt {
                     tcx: self,
                     span
@@ -554,14 +554,14 @@ macro_rules! define_maps {
             }
 
             $($(#[$attr])*
-            pub fn $name(self, key: $K) -> $V {
+            pub(crate) fn $name(self, key: $K) -> $V {
                 self.at(DUMMY_SP).$name(key)
             })*
         }
 
         impl<'a, $tcx, 'lcx> TyCtxtAt<'a, $tcx, 'lcx> {
             $($(#[$attr])*
-            pub fn $name(self, key: $K) -> $V {
+            pub(crate) fn $name(self, key: $K) -> $V {
                 queries::$name::try_get(self.tcx, self.span, key).unwrap_or_else(|mut e| {
                     e.emit();
                     Value::from_cycle_error(self.global_tcx())
@@ -584,7 +584,7 @@ macro_rules! define_maps {
 macro_rules! define_map_struct {
     (tcx: $tcx:tt,
      input: ($(([$(modifiers:tt)*] [$($attr:tt)*] [$name:ident]))*)) => {
-        pub struct Maps<$tcx> {
+        pub(crate) struct Maps<$tcx> {
             providers: IndexVec<CrateNum, Providers<$tcx>>,
             query_stack: RefCell<Vec<(Span, Query<$tcx>)>>,
             $($(#[$attr])*  $name: RefCell<QueryMap<$tcx, queries::$name<$tcx>>>,)*
@@ -595,8 +595,8 @@ macro_rules! define_map_struct {
 macro_rules! define_provider_struct {
     (tcx: $tcx:tt,
      input: ($(([$($modifiers:tt)*] [$name:ident] [$K:ty] [$R:ty]))*)) => {
-        pub struct Providers<$tcx> {
-            $(pub $name: for<'a> fn(TyCtxt<'a, $tcx, $tcx>, $K) -> $R,)*
+        pub(crate) struct Providers<$tcx> {
+            $(pub(crate) $name: for<'a> fn(TyCtxt<'a, $tcx, $tcx>, $K) -> $R,)*
         }
 
         impl<$tcx> Default for Providers<$tcx> {
@@ -654,7 +654,7 @@ macro_rules! define_provider_struct {
 /// then `force_from_dep_node()` should not fail for it. Otherwise, you can just
 /// add it to the "We don't have enough information to reconstruct..." group in
 /// the match below.
-pub fn force_from_dep_node<'a, 'gcx, 'lcx>(tcx: TyCtxt<'a, 'gcx, 'lcx>,
+pub(crate) fn force_from_dep_node<'a, 'gcx, 'lcx>(tcx: TyCtxt<'a, 'gcx, 'lcx>,
                                            dep_node: &DepNode)
                                            -> bool {
     use ty::maps::keys::Key;
@@ -936,7 +936,7 @@ macro_rules! impl_load_from_cache {
         impl DepNode {
             // Check whether the query invocation corresponding to the given
             // DepNode is eligible for on-disk-caching.
-            pub fn cache_on_disk(&self, tcx: TyCtxt) -> bool {
+            pub(crate) fn cache_on_disk(&self, tcx: TyCtxt) -> bool {
                 use ty::maps::queries;
                 use ty::maps::QueryDescription;
 
@@ -954,7 +954,7 @@ macro_rules! impl_load_from_cache {
             // above `cache_on_disk` methods returns true.
             // Also, as a sanity check, it expects that the corresponding query
             // invocation has been marked as green already.
-            pub fn load_from_on_disk_cache(&self, tcx: TyCtxt) {
+            pub(crate) fn load_from_on_disk_cache(&self, tcx: TyCtxt) {
                 match self.kind {
                     $(DepKind::$dep_kind => {
                         debug_assert!(tcx.dep_graph

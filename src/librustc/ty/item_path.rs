@@ -26,7 +26,7 @@ thread_local! {
 /// also enables "type-based" impl paths. This is used when building
 /// symbols that contain types, where we want the crate name to be
 /// part of the symbol.
-pub fn with_forced_absolute_paths<F: FnOnce() -> R, R>(f: F) -> R {
+pub(crate) fn with_forced_absolute_paths<F: FnOnce() -> R, R>(f: F) -> R {
     FORCE_ABSOLUTE.with(|force| {
         let old = force.get();
         force.set(true);
@@ -40,7 +40,7 @@ pub fn with_forced_absolute_paths<F: FnOnce() -> R, R>(f: F) -> R {
 /// normally try to use types. But at some points, notably while printing
 /// cycle errors, this can result in extra or suboptimal error output,
 /// so this variable disables that check.
-pub fn with_forced_impl_filename_line<F: FnOnce() -> R, R>(f: F) -> R {
+pub(crate) fn with_forced_impl_filename_line<F: FnOnce() -> R, R>(f: F) -> R {
     FORCE_IMPL_FILENAME_LINE.with(|force| {
         let old = force.get();
         force.set(true);
@@ -54,7 +54,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Returns a string identifying this def-id. This string is
     /// suitable for user output. It is relative to the current crate
     /// root, unless with_forced_absolute_paths was used.
-    pub fn item_path_str(self, def_id: DefId) -> String {
+    pub(crate) fn item_path_str(self, def_id: DefId) -> String {
         let mode = FORCE_ABSOLUTE.with(|force| {
             if force.get() {
                 RootMode::Absolute
@@ -68,13 +68,13 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     }
 
     /// Returns a string identifying this local node-id.
-    pub fn node_path_str(self, id: ast::NodeId) -> String {
+    pub(crate) fn node_path_str(self, id: ast::NodeId) -> String {
         self.item_path_str(self.hir.local_def_id(id))
     }
 
     /// Returns a string identifying this def-id. This string is
     /// suitable for user output. It always begins with a crate identifier.
-    pub fn absolute_item_path_str(self, def_id: DefId) -> String {
+    pub(crate) fn absolute_item_path_str(self, def_id: DefId) -> String {
         let mut buffer = LocalPathBuffer::new(RootMode::Absolute);
         self.push_item_path(&mut buffer, def_id);
         buffer.into_string()
@@ -83,7 +83,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Returns the "path" to a particular crate. This can proceed in
     /// various ways, depending on the `root_mode` of the `buffer`.
     /// (See `RootMode` enum for more details.)
-    pub fn push_krate_path<T>(self, buffer: &mut T, cnum: CrateNum)
+    pub(crate) fn push_krate_path<T>(self, buffer: &mut T, cnum: CrateNum)
         where T: ItemPathBuffer
     {
         match *buffer.root_mode() {
@@ -126,7 +126,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// If possible, this pushes a global path resolving to `external_def_id` that is visible
     /// from at least one local module and returns true. If the crate defining `external_def_id` is
     /// declared with an `extern crate`, the path is guaranteed to use the `extern crate`.
-    pub fn try_push_visible_item_path<T>(self, buffer: &mut T, external_def_id: DefId) -> bool
+    pub(crate) fn try_push_visible_item_path<T>(self, buffer: &mut T, external_def_id: DefId) -> bool
         where T: ItemPathBuffer
     {
         let visible_parent_map = self.visible_parent_map(LOCAL_CRATE);
@@ -175,7 +175,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn push_item_path<T>(self, buffer: &mut T, def_id: DefId)
+    pub(crate) fn push_item_path<T>(self, buffer: &mut T, def_id: DefId)
         where T: ItemPathBuffer
     {
         match *buffer.root_mode() {
@@ -331,7 +331,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Returns the def-id of `def_id`'s parent in the def tree. If
     /// this returns `None`, then `def_id` represents a crate root or
     /// inlined root.
-    pub fn parent_def_id(self, def_id: DefId) -> Option<DefId> {
+    pub(crate) fn parent_def_id(self, def_id: DefId) -> Option<DefId> {
         let key = self.def_key(def_id);
         key.parent.map(|index| DefId { krate: def_id.krate, index: index })
     }
@@ -343,7 +343,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 /// function tries to find a "characteristic def-id" for a
 /// type. It's just a heuristic so it makes some questionable
 /// decisions and we may want to adjust it later.
-pub fn characteristic_def_id_of_type(ty: Ty) -> Option<DefId> {
+pub(crate) fn characteristic_def_id_of_type(ty: Ty) -> Option<DefId> {
     match ty.sty {
         ty::TyAdt(adt_def, _) => Some(adt_def.did),
 
@@ -384,13 +384,13 @@ pub fn characteristic_def_id_of_type(ty: Ty) -> Option<DefId> {
 /// Unifying Trait for different kinds of item paths we might
 /// construct. The basic interface is that components get pushed: the
 /// instance can also customize how we handle the root of a crate.
-pub trait ItemPathBuffer {
+pub(crate) trait ItemPathBuffer {
     fn root_mode(&self) -> &RootMode;
     fn push(&mut self, text: &str);
 }
 
 #[derive(Debug)]
-pub enum RootMode {
+pub(crate) enum RootMode {
     /// Try to make a path relative to the local crate.  In
     /// particular, local paths have no prefix, and if the path comes
     /// from an extern crate, start with the path to the `extern

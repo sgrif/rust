@@ -21,7 +21,7 @@ use hir;
 use ty::util::IntTypeExt;
 
 #[derive(Copy, Clone, Debug)]
-pub enum PlaceTy<'tcx> {
+pub(crate) enum PlaceTy<'tcx> {
     /// Normal type.
     Ty { ty: Ty<'tcx> },
 
@@ -32,11 +32,11 @@ pub enum PlaceTy<'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> PlaceTy<'tcx> {
-    pub fn from_ty(ty: Ty<'tcx>) -> PlaceTy<'tcx> {
+    pub(crate) fn from_ty(ty: Ty<'tcx>) -> PlaceTy<'tcx> {
         PlaceTy::Ty { ty: ty }
     }
 
-    pub fn to_ty(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx> {
+    pub(crate) fn to_ty(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx> {
         match *self {
             PlaceTy::Ty { ty } =>
                 ty,
@@ -45,7 +45,7 @@ impl<'a, 'gcx, 'tcx> PlaceTy<'tcx> {
         }
     }
 
-    pub fn projection_ty(self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn projection_ty(self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                          elem: &PlaceElem<'tcx>)
                          -> PlaceTy<'tcx>
     {
@@ -123,7 +123,7 @@ impl<'tcx> TypeFoldable<'tcx> for PlaceTy<'tcx> {
 }
 
 impl<'tcx> Place<'tcx> {
-    pub fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> PlaceTy<'tcx>
+    pub(crate) fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> PlaceTy<'tcx>
         where D: HasLocalDecls<'tcx>
     {
         match *self {
@@ -137,13 +137,13 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
-pub enum RvalueInitializationState {
+pub(crate) enum RvalueInitializationState {
     Shallow,
     Deep
 }
 
 impl<'tcx> Rvalue<'tcx> {
-    pub fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>
+    pub(crate) fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>
         where D: HasLocalDecls<'tcx>
     {
         match *self {
@@ -217,7 +217,7 @@ impl<'tcx> Rvalue<'tcx> {
     #[inline]
     /// Returns whether this rvalue is deeply initialized (most rvalues) or
     /// whether its only shallowly initialized (`Rvalue::Box`).
-    pub fn initialization_state(&self) -> RvalueInitializationState {
+    pub(crate) fn initialization_state(&self) -> RvalueInitializationState {
         match *self {
             Rvalue::NullaryOp(NullOp::Box, _) => RvalueInitializationState::Shallow,
             _ => RvalueInitializationState::Deep
@@ -226,7 +226,7 @@ impl<'tcx> Rvalue<'tcx> {
 }
 
 impl<'tcx> Operand<'tcx> {
-    pub fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>
+    pub(crate) fn ty<'a, 'gcx, D>(&self, local_decls: &D, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>
         where D: HasLocalDecls<'tcx>
     {
         match self {
@@ -238,7 +238,7 @@ impl<'tcx> Operand<'tcx> {
 }
 
 impl<'tcx> BinOp {
-      pub fn ty<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+      pub(crate) fn ty<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                     lhs_ty: Ty<'tcx>,
                     rhs_ty: Ty<'tcx>)
                     -> Ty<'tcx> {
@@ -262,7 +262,7 @@ impl<'tcx> BinOp {
 }
 
 impl BorrowKind {
-    pub fn to_mutbl_lossy(self) -> hir::Mutability {
+    pub(crate) fn to_mutbl_lossy(self) -> hir::Mutability {
         match self {
             BorrowKind::Mut { .. } => hir::MutMutable,
             BorrowKind::Shared => hir::MutImmutable,
@@ -276,7 +276,7 @@ impl BorrowKind {
 }
 
 impl BinOp {
-    pub fn to_hir_binop(self) -> hir::BinOp_ {
+    pub(crate) fn to_hir_binop(self) -> hir::BinOp_ {
         match self {
             BinOp::Add => hir::BinOp_::BiAdd,
             BinOp::Sub => hir::BinOp_::BiSub,

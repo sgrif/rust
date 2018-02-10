@@ -60,12 +60,12 @@
 
 #![allow(non_camel_case_types)]
 
-pub use self::PointerKind::*;
-pub use self::InteriorKind::*;
-pub use self::FieldName::*;
-pub use self::MutabilityCategory::*;
-pub use self::AliasableReason::*;
-pub use self::Note::*;
+pub(crate) use self::PointerKind::*;
+pub(crate) use self::InteriorKind::*;
+pub(crate) use self::FieldName::*;
+pub(crate) use self::MutabilityCategory::*;
+pub(crate) use self::AliasableReason::*;
+pub(crate) use self::Note::*;
 
 use self::Aliasability::*;
 
@@ -89,7 +89,7 @@ use std::rc::Rc;
 use util::nodemap::ItemLocalSet;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Categorization<'tcx> {
+pub(crate) enum Categorization<'tcx> {
     Rvalue(ty::Region<'tcx>),              // temporary val, argument is its scope
     StaticItem,
     Upvar(Upvar),                          // upvar referenced by closure env
@@ -103,14 +103,14 @@ pub enum Categorization<'tcx> {
 
 // Represents any kind of upvar
 #[derive(Clone, Copy, PartialEq)]
-pub struct Upvar {
-    pub id: ty::UpvarId,
-    pub kind: ty::ClosureKind
+pub(crate) struct Upvar {
+    pub(crate) id: ty::UpvarId,
+    pub(crate) kind: ty::ClosureKind
 }
 
 // different kinds of pointers:
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum PointerKind<'tcx> {
+pub(crate) enum PointerKind<'tcx> {
     /// `Box<T>`
     Unique,
 
@@ -127,25 +127,25 @@ pub enum PointerKind<'tcx> {
 // We use the term "interior" to mean "something reachable from the
 // base without a pointer dereference", e.g. a field
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum InteriorKind {
+pub(crate) enum InteriorKind {
     InteriorField(FieldName),
     InteriorElement(InteriorOffsetKind),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum FieldName {
+pub(crate) enum FieldName {
     NamedField(ast::Name),
     PositionalField(usize)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum InteriorOffsetKind {
+pub(crate) enum InteriorOffsetKind {
     Index,            // e.g. `array_expr[index_expr]`
     Pattern,          // e.g. `fn foo([_, a, _, _]: [A; 4]) { ... }`
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum MutabilityCategory {
+pub(crate) enum MutabilityCategory {
     McImmutable, // Immutable.
     McDeclared,  // Directly declared as mutable.
     McInherited, // Inherited from the fact that owner is mutable.
@@ -157,7 +157,7 @@ pub enum MutabilityCategory {
 // derefs.  The note allows detecting them without deep pattern
 // matching on the categorization.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum Note {
+pub(crate) enum Note {
     NoteClosureEnv(ty::UpvarId), // Deref through closure env
     NoteUpvarRef(ty::UpvarId),   // Deref through by-ref upvar
     NoteNone                     // Nothing special
@@ -178,18 +178,18 @@ pub enum Note {
 // (`@T`). So use `cmt.ty` to find the type of the value in a consistent
 // fashion. For more details, see the method `cat_pattern`
 #[derive(Clone, Debug, PartialEq)]
-pub struct cmt_<'tcx> {
-    pub id: ast::NodeId,           // id of expr/pat producing this value
-    pub span: Span,                // span of same expr/pat
-    pub cat: Categorization<'tcx>, // categorization of expr
-    pub mutbl: MutabilityCategory, // mutability of expr as place
-    pub ty: Ty<'tcx>,              // type of the expr (*see WARNING above*)
-    pub note: Note,                // Note about the provenance of this cmt
+pub(crate) struct cmt_<'tcx> {
+    pub(crate) id: ast::NodeId,           // id of expr/pat producing this value
+    pub(crate) span: Span,                // span of same expr/pat
+    pub(crate) cat: Categorization<'tcx>, // categorization of expr
+    pub(crate) mutbl: MutabilityCategory, // mutability of expr as place
+    pub(crate) ty: Ty<'tcx>,              // type of the expr (*see WARNING above*)
+    pub(crate) note: Note,                // Note about the provenance of this cmt
 }
 
-pub type cmt<'tcx> = Rc<cmt_<'tcx>>;
+pub(crate) type cmt<'tcx> = Rc<cmt_<'tcx>>;
 
-pub enum ImmutabilityBlame<'tcx> {
+pub(crate) enum ImmutabilityBlame<'tcx> {
     ImmLocal(ast::NodeId),
     ClosureEnv(LocalDefId),
     LocalDeref(ast::NodeId),
@@ -221,7 +221,7 @@ impl<'tcx> cmt_<'tcx> {
         Some((adt_def, field_def))
     }
 
-    pub fn immutability_blame(&self) -> Option<ImmutabilityBlame<'tcx>> {
+    pub(crate) fn immutability_blame(&self) -> Option<ImmutabilityBlame<'tcx>> {
         match self.cat {
             Categorization::Deref(ref base_cmt, BorrowedPtr(ty::ImmBorrow, _)) |
             Categorization::Deref(ref base_cmt, Implicit(ty::ImmBorrow, _)) => {
@@ -266,7 +266,7 @@ impl<'tcx> cmt_<'tcx> {
     }
 }
 
-pub trait ast_node {
+pub(crate) trait ast_node {
     fn id(&self) -> ast::NodeId;
     fn span(&self) -> Span;
 }
@@ -282,18 +282,18 @@ impl ast_node for hir::Pat {
 }
 
 #[derive(Clone)]
-pub struct MemCategorizationContext<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
-    pub tcx: TyCtxt<'a, 'gcx, 'tcx>,
-    pub region_scope_tree: &'a region::ScopeTree,
-    pub tables: &'a ty::TypeckTables<'tcx>,
+pub(crate) struct MemCategorizationContext<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+    pub(crate) tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) region_scope_tree: &'a region::ScopeTree,
+    pub(crate) tables: &'a ty::TypeckTables<'tcx>,
     rvalue_promotable_map: Option<Rc<ItemLocalSet>>,
     infcx: Option<&'a InferCtxt<'a, 'gcx, 'tcx>>,
 }
 
-pub type McResult<T> = Result<T, ()>;
+pub(crate) type McResult<T> = Result<T, ()>;
 
 impl MutabilityCategory {
-    pub fn from_mutbl(m: hir::Mutability) -> MutabilityCategory {
+    pub(crate) fn from_mutbl(m: hir::Mutability) -> MutabilityCategory {
         let ret = match m {
             MutImmutable => McImmutable,
             MutMutable => McDeclared
@@ -303,7 +303,7 @@ impl MutabilityCategory {
         ret
     }
 
-    pub fn from_borrow_kind(borrow_kind: ty::BorrowKind) -> MutabilityCategory {
+    pub(crate) fn from_borrow_kind(borrow_kind: ty::BorrowKind) -> MutabilityCategory {
         let ret = match borrow_kind {
             ty::ImmBorrow => McImmutable,
             ty::UniqueImmBorrow => McImmutable,
@@ -354,7 +354,7 @@ impl MutabilityCategory {
         ret
     }
 
-    pub fn inherit(&self) -> MutabilityCategory {
+    pub(crate) fn inherit(&self) -> MutabilityCategory {
         let ret = match *self {
             McImmutable => McImmutable,
             McDeclared => McInherited,
@@ -364,7 +364,7 @@ impl MutabilityCategory {
         ret
     }
 
-    pub fn is_mutable(&self) -> bool {
+    pub(crate) fn is_mutable(&self) -> bool {
         let ret = match *self {
             McImmutable => false,
             McInherited => true,
@@ -374,7 +374,7 @@ impl MutabilityCategory {
         ret
     }
 
-    pub fn is_immutable(&self) -> bool {
+    pub(crate) fn is_immutable(&self) -> bool {
         let ret = match *self {
             McImmutable => true,
             McDeclared | McInherited => false
@@ -383,7 +383,7 @@ impl MutabilityCategory {
         ret
     }
 
-    pub fn to_user_str(&self) -> &'static str {
+    pub(crate) fn to_user_str(&self) -> &'static str {
         match *self {
             McDeclared | McInherited => "mutable",
             McImmutable => "immutable",
@@ -392,7 +392,7 @@ impl MutabilityCategory {
 }
 
 impl<'a, 'tcx> MemCategorizationContext<'a, 'tcx, 'tcx> {
-    pub fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) fn new(tcx: TyCtxt<'a, 'tcx, 'tcx>,
                region_scope_tree: &'a region::ScopeTree,
                tables: &'a ty::TypeckTables<'tcx>,
                rvalue_promotable_map: Option<Rc<ItemLocalSet>>)
@@ -417,7 +417,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
     ///   temporaries may be overly conservative;
     /// - similarly, as the results of upvar analysis are not yet
     ///   known, the results around upvar accesses may be incorrect.
-    pub fn with_infer(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn with_infer(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
                       region_scope_tree: &'a region::ScopeTree,
                       tables: &'a ty::TypeckTables<'tcx>)
                       -> MemCategorizationContext<'a, 'gcx, 'tcx> {
@@ -438,7 +438,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn type_moves_by_default(&self,
+    pub(crate) fn type_moves_by_default(&self,
                                  param_env: ty::ParamEnv<'tcx>,
                                  ty: Ty<'tcx>,
                                  span: Span)
@@ -487,18 +487,18 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn node_ty(&self,
+    pub(crate) fn node_ty(&self,
                    hir_id: hir::HirId)
                    -> McResult<Ty<'tcx>> {
         self.resolve_type_vars_or_error(hir_id,
                                         self.tables.node_id_to_type_opt(hir_id))
     }
 
-    pub fn expr_ty(&self, expr: &hir::Expr) -> McResult<Ty<'tcx>> {
+    pub(crate) fn expr_ty(&self, expr: &hir::Expr) -> McResult<Ty<'tcx>> {
         self.resolve_type_vars_or_error(expr.hir_id, self.tables.expr_ty_opt(expr))
     }
 
-    pub fn expr_ty_adjusted(&self, expr: &hir::Expr) -> McResult<Ty<'tcx>> {
+    pub(crate) fn expr_ty_adjusted(&self, expr: &hir::Expr) -> McResult<Ty<'tcx>> {
         self.resolve_type_vars_or_error(expr.hir_id, self.tables.expr_ty_adjusted_opt(expr))
     }
 
@@ -535,7 +535,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         Ok(ret_ty)
     }
 
-    pub fn cat_expr(&self, expr: &hir::Expr) -> McResult<cmt<'tcx>> {
+    pub(crate) fn cat_expr(&self, expr: &hir::Expr) -> McResult<cmt<'tcx>> {
         // This recursion helper avoids going through *too many*
         // adjustments, since *only* non-overloaded deref recurses.
         fn helper<'a, 'gcx, 'tcx>(mc: &MemCategorizationContext<'a, 'gcx, 'tcx>,
@@ -553,7 +553,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         helper(self, expr, self.tables.expr_adjustments(expr))
     }
 
-    pub fn cat_expr_adjusted(&self, expr: &hir::Expr,
+    pub(crate) fn cat_expr_adjusted(&self, expr: &hir::Expr,
                              previous: cmt<'tcx>,
                              adjustment: &adjustment::Adjustment<'tcx>)
                              -> McResult<cmt<'tcx>> {
@@ -596,7 +596,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn cat_expr_unadjusted(&self, expr: &hir::Expr) -> McResult<cmt<'tcx>> {
+    pub(crate) fn cat_expr_unadjusted(&self, expr: &hir::Expr) -> McResult<cmt<'tcx>> {
         debug!("cat_expr: id={} expr={:?}", expr.id, expr);
 
         let expr_ty = self.expr_ty(expr)?;
@@ -663,7 +663,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn cat_def(&self,
+    pub(crate) fn cat_def(&self,
                    id: ast::NodeId,
                    span: Span,
                    expr_ty: Ty<'tcx>,
@@ -893,7 +893,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
 
     /// Returns the lifetime of a temporary created by expr with id `id`.
     /// This could be `'static` if `id` is part of a constant expression.
-    pub fn temporary_scope(&self, id: hir::ItemLocalId) -> ty::Region<'tcx> {
+    pub(crate) fn temporary_scope(&self, id: hir::ItemLocalId) -> ty::Region<'tcx> {
         let scope = self.region_scope_tree.temporary_scope(id);
         self.tcx.mk_region(match scope {
             Some(scope) => ty::ReScope(scope),
@@ -901,7 +901,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         })
     }
 
-    pub fn cat_rvalue_node(&self,
+    pub(crate) fn cat_rvalue_node(&self,
                            id: ast::NodeId,
                            span: Span,
                            expr_ty: Ty<'tcx>)
@@ -930,7 +930,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         ret
     }
 
-    pub fn cat_rvalue(&self,
+    pub(crate) fn cat_rvalue(&self,
                       cmt_id: ast::NodeId,
                       span: Span,
                       temp_scope: ty::Region<'tcx>,
@@ -947,7 +947,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         ret
     }
 
-    pub fn cat_field<N:ast_node>(&self,
+    pub(crate) fn cat_field<N:ast_node>(&self,
                                  node: &N,
                                  base_cmt: cmt<'tcx>,
                                  f_name: ast::Name,
@@ -965,7 +965,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         ret
     }
 
-    pub fn cat_tup_field<N:ast_node>(&self,
+    pub(crate) fn cat_tup_field<N:ast_node>(&self,
                                      node: &N,
                                      base_cmt: cmt<'tcx>,
                                      f_idx: usize,
@@ -1011,7 +1011,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         self.cat_deref(expr, base_cmt, implicit)
     }
 
-    pub fn cat_deref<N:ast_node>(&self,
+    pub(crate) fn cat_deref<N:ast_node>(&self,
                                  node: &N,
                                  base_cmt: cmt<'tcx>,
                                  implicit: bool)
@@ -1080,7 +1080,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         return Ok(ret);
     }
 
-    pub fn cat_imm_interior<N:ast_node>(&self,
+    pub(crate) fn cat_imm_interior<N:ast_node>(&self,
                                         node: &N,
                                         base_cmt: cmt<'tcx>,
                                         interior_ty: Ty<'tcx>,
@@ -1098,7 +1098,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         ret
     }
 
-    pub fn cat_downcast_if_needed<N:ast_node>(&self,
+    pub(crate) fn cat_downcast_if_needed<N:ast_node>(&self,
                                               node: &N,
                                               base_cmt: cmt<'tcx>,
                                               variant_did: DefId)
@@ -1123,7 +1123,7 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn cat_pattern<F>(&self, cmt: cmt<'tcx>, pat: &hir::Pat, mut op: F) -> McResult<()>
+    pub(crate) fn cat_pattern<F>(&self, cmt: cmt<'tcx>, pat: &hir::Pat, mut op: F) -> McResult<()>
         where F: FnMut(cmt<'tcx>, &hir::Pat),
     {
         self.cat_pattern_(cmt, pat, &mut op)
@@ -1349,21 +1349,21 @@ impl<'a, 'gcx, 'tcx> MemCategorizationContext<'a, 'gcx, 'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum Aliasability {
+pub(crate) enum Aliasability {
     FreelyAliasable(AliasableReason),
     NonAliasable,
     ImmutableUnique(Box<Aliasability>),
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum AliasableReason {
+pub(crate) enum AliasableReason {
     AliasableBorrowed,
     AliasableStatic,
     AliasableStaticMut,
 }
 
 impl<'tcx> cmt_<'tcx> {
-    pub fn guarantor(&self) -> cmt<'tcx> {
+    pub(crate) fn guarantor(&self) -> cmt<'tcx> {
         //! Returns `self` after stripping away any derefs or
         //! interior content. The return value is basically the `cmt` which
         //! determines how long the value in `self` remains live.
@@ -1387,7 +1387,7 @@ impl<'tcx> cmt_<'tcx> {
     }
 
     /// Returns `FreelyAliasable(_)` if this place represents a freely aliasable pointer type.
-    pub fn freely_aliasable(&self) -> Aliasability {
+    pub(crate) fn freely_aliasable(&self) -> Aliasability {
         // Maybe non-obvious: copied upvars can only be considered
         // non-aliasable in once closures, since any other kind can be
         // aliased and eventually recused.
@@ -1428,7 +1428,7 @@ impl<'tcx> cmt_<'tcx> {
 
     // Digs down through one or two layers of deref and grabs the cmt
     // for the upvar if a note indicates there is one.
-    pub fn upvar(&self) -> Option<cmt<'tcx>> {
+    pub(crate) fn upvar(&self) -> Option<cmt<'tcx>> {
         match self.note {
             NoteClosureEnv(..) | NoteUpvarRef(..) => {
                 Some(match self.cat {
@@ -1447,7 +1447,7 @@ impl<'tcx> cmt_<'tcx> {
     }
 
 
-    pub fn descriptive_string(&self, tcx: TyCtxt) -> String {
+    pub(crate) fn descriptive_string(&self, tcx: TyCtxt) -> String {
         match self.cat {
             Categorization::StaticItem => {
                 "static item".to_string()
@@ -1509,7 +1509,7 @@ impl<'tcx> cmt_<'tcx> {
     }
 }
 
-pub fn ptr_sigil(ptr: PointerKind) -> &'static str {
+pub(crate) fn ptr_sigil(ptr: PointerKind) -> &'static str {
     match ptr {
         Unique => "Box",
         BorrowedPtr(ty::ImmBorrow, _) |

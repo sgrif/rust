@@ -27,21 +27,21 @@ use ty::{self, TyCtxt, Region};
 ///
 /// This stuff is a bit convoluted and should be refactored, but as we
 /// move to NLL it'll all go away anyhow.
-pub struct RegionRelations<'a, 'gcx: 'tcx, 'tcx: 'a> {
-    pub tcx: TyCtxt<'a, 'gcx, 'tcx>,
+pub(crate) struct RegionRelations<'a, 'gcx: 'tcx, 'tcx: 'a> {
+    pub(crate) tcx: TyCtxt<'a, 'gcx, 'tcx>,
 
     /// context used to fetch the region maps
-    pub context: DefId,
+    pub(crate) context: DefId,
 
     /// region maps for the given context
-    pub region_scope_tree: &'a region::ScopeTree,
+    pub(crate) region_scope_tree: &'a region::ScopeTree,
 
     /// free-region relationships
-    pub free_regions: &'a FreeRegionMap<'tcx>,
+    pub(crate) free_regions: &'a FreeRegionMap<'tcx>,
 }
 
 impl<'a, 'gcx, 'tcx> RegionRelations<'a, 'gcx, 'tcx> {
-    pub fn new(
+    pub(crate) fn new(
         tcx: TyCtxt<'a, 'gcx, 'tcx>,
         context: DefId,
         region_scope_tree: &'a region::ScopeTree,
@@ -57,7 +57,7 @@ impl<'a, 'gcx, 'tcx> RegionRelations<'a, 'gcx, 'tcx> {
 
     /// Determines whether one region is a subregion of another.  This is intended to run *after
     /// inference* and sadly the logic is somewhat duplicated with the code in infer.rs.
-    pub fn is_subregion_of(&self,
+    pub(crate) fn is_subregion_of(&self,
                            sub_region: ty::Region<'tcx>,
                            super_region: ty::Region<'tcx>)
                            -> bool {
@@ -109,7 +109,7 @@ impl<'a, 'gcx, 'tcx> RegionRelations<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn lub_free_regions(&self,
+    pub(crate) fn lub_free_regions(&self,
                             r_a: Region<'tcx>,
                             r_b: Region<'tcx>)
                             -> Region<'tcx> {

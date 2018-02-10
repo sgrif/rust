@@ -13,13 +13,13 @@ use hir::BindingAnnotation;
 use hir::Mutability;
 
 #[derive(Clone, PartialEq, Eq, RustcEncodable, RustcDecodable, Hash, Debug, Copy)]
-pub enum BindingMode {
+pub(crate) enum BindingMode {
     BindByReference(Mutability),
     BindByValue(Mutability),
 }
 
 impl BindingMode {
-    pub fn convert(ba: BindingAnnotation) -> BindingMode {
+    pub(crate) fn convert(ba: BindingAnnotation) -> BindingMode {
         match ba {
             Unannotated => BindingMode::BindByValue(Mutability::MutImmutable),
             Mutable => BindingMode::BindByValue(Mutability::MutMutable),

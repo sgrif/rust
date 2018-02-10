@@ -117,14 +117,14 @@ macro_rules! define_dep_nodes {
     ) => (
         #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
                  RustcEncodable, RustcDecodable)]
-        pub enum DepKind {
+        pub(crate) enum DepKind {
             $($variant),*
         }
 
         impl DepKind {
             #[allow(unreachable_code)]
             #[inline]
-            pub fn can_reconstruct_query_key<$tcx>(&self) -> bool {
+            pub(crate) fn can_reconstruct_query_key<$tcx>(&self) -> bool {
                 match *self {
                     $(
                         DepKind :: $variant => {
@@ -152,7 +152,7 @@ macro_rules! define_dep_nodes {
             }
 
             #[inline]
-            pub fn is_anon(&self) -> bool {
+            pub(crate) fn is_anon(&self) -> bool {
                 match *self {
                     $(
                         DepKind :: $variant => { contains_anon_attr!($($attr),*) }
@@ -161,7 +161,7 @@ macro_rules! define_dep_nodes {
             }
 
             #[inline]
-            pub fn is_input(&self) -> bool {
+            pub(crate) fn is_input(&self) -> bool {
                 match *self {
                     $(
                         DepKind :: $variant => { contains_input_attr!($($attr),*) }
@@ -170,7 +170,7 @@ macro_rules! define_dep_nodes {
             }
 
             #[inline]
-            pub fn is_eval_always(&self) -> bool {
+            pub(crate) fn is_eval_always(&self) -> bool {
                 match *self {
                     $(
                         DepKind :: $variant => { contains_eval_always_attr!($($attr), *) }
@@ -180,7 +180,7 @@ macro_rules! define_dep_nodes {
 
             #[allow(unreachable_code)]
             #[inline]
-            pub fn has_params(&self) -> bool {
+            pub(crate) fn has_params(&self) -> bool {
                 match *self {
                     $(
                         DepKind :: $variant => {
@@ -203,7 +203,7 @@ macro_rules! define_dep_nodes {
             }
         }
 
-        pub enum DepConstructor<$tcx> {
+        pub(crate) enum DepConstructor<$tcx> {
             $(
                 $variant $(( $($tuple_arg),* ))*
                          $({ $($struct_arg_name : $struct_arg_ty),* })*
@@ -212,14 +212,14 @@ macro_rules! define_dep_nodes {
 
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
                  RustcEncodable, RustcDecodable)]
-        pub struct DepNode {
-            pub kind: DepKind,
-            pub hash: Fingerprint,
+        pub(crate) struct DepNode {
+            pub(crate) kind: DepKind,
+            pub(crate) hash: Fingerprint,
         }
 
         impl DepNode {
             #[allow(unreachable_code, non_snake_case)]
-            pub fn new<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+            pub(crate) fn new<'a, 'gcx, 'tcx>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                        dep: DepConstructor<'gcx>)
                                        -> DepNode
                 where 'gcx: 'a + 'tcx,
@@ -290,7 +290,7 @@ macro_rules! define_dep_nodes {
             /// method will assert that the given DepKind actually requires a
             /// single DefId/DefPathHash parameter.
             #[inline]
-            pub fn from_def_path_hash(kind: DepKind,
+            pub(crate) fn from_def_path_hash(kind: DepKind,
                                       def_path_hash: DefPathHash)
                                       -> DepNode {
                 assert!(kind.can_reconstruct_query_key() && kind.has_params());
@@ -304,7 +304,7 @@ macro_rules! define_dep_nodes {
             /// that the DepNode corresponding to the given DepKind actually
             /// does not require any parameters.
             #[inline]
-            pub fn new_no_params(kind: DepKind) -> DepNode {
+            pub(crate) fn new_no_params(kind: DepKind) -> DepNode {
                 assert!(!kind.has_params());
                 DepNode {
                     kind,
@@ -323,7 +323,7 @@ macro_rules! define_dep_nodes {
             /// refers to something from the previous compilation session that
             /// has been removed.
             #[inline]
-            pub fn extract_def_id(&self, tcx: TyCtxt) -> Option<DefId> {
+            pub(crate) fn extract_def_id(&self, tcx: TyCtxt) -> Option<DefId> {
                 if self.kind.can_reconstruct_query_key() {
                     let def_path_hash = DefPathHash(self.hash);
                     if let Some(ref def_path_map) = tcx.def_path_hash_to_def_id.as_ref() {
@@ -337,7 +337,7 @@ macro_rules! define_dep_nodes {
             }
 
             /// Used in testing
-            pub fn from_label_string(label: &str,
+            pub(crate) fn from_label_string(label: &str,
                                      def_path_hash: DefPathHash)
                                      -> Result<DepNode, ()> {
                 let kind = match label {
@@ -359,7 +359,7 @@ macro_rules! define_dep_nodes {
             }
 
             /// Used in testing
-            pub fn has_label_string(label: &str) -> bool {
+            pub(crate) fn has_label_string(label: &str) -> bool {
                 match label {
                     $(
                         stringify!($variant) => true,
@@ -372,9 +372,9 @@ macro_rules! define_dep_nodes {
         /// Contains variant => str representations for constructing
         /// DepNode groups for tests.
         #[allow(dead_code, non_upper_case_globals)]
-        pub mod label_strs {
+        pub(crate) mod label_strs {
            $(
-                pub const $variant: &'static str = stringify!($variant);
+                pub(crate) const $variant: &'static str = stringify!($variant);
             )*
         }
     );
@@ -412,21 +412,21 @@ impl fmt::Debug for DepNode {
 
 impl DefPathHash {
     #[inline]
-    pub fn to_dep_node(self, kind: DepKind) -> DepNode {
+    pub(crate) fn to_dep_node(self, kind: DepKind) -> DepNode {
         DepNode::from_def_path_hash(kind, self)
     }
 }
 
 impl DefId {
     #[inline]
-    pub fn to_dep_node(self, tcx: TyCtxt, kind: DepKind) -> DepNode {
+    pub(crate) fn to_dep_node(self, tcx: TyCtxt, kind: DepKind) -> DepNode {
         DepNode::from_def_path_hash(kind, tcx.def_path_hash(self))
     }
 }
 
 impl DepKind {
     #[inline]
-    pub fn fingerprint_needed_for_crate_hash(self) -> bool {
+    pub(crate) fn fingerprint_needed_for_crate_hash(self) -> bool {
         match self {
             DepKind::HirBody |
             DepKind::Krate => true,
@@ -769,12 +769,12 @@ impl<'a, 'gcx: 'tcx + 'a, 'tcx: 'a> DepNodeParams<'a, 'gcx, 'tcx> for (HirId,) {
 /// them even in the absence of a tcx.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
          RustcEncodable, RustcDecodable)]
-pub struct WorkProductId {
+pub(crate) struct WorkProductId {
     hash: Fingerprint
 }
 
 impl WorkProductId {
-    pub fn from_cgu_name(cgu_name: &str) -> WorkProductId {
+    pub(crate) fn from_cgu_name(cgu_name: &str) -> WorkProductId {
         let mut hasher = StableHasher::new();
         cgu_name.len().hash(&mut hasher);
         cgu_name.hash(&mut hasher);
@@ -783,7 +783,7 @@ impl WorkProductId {
         }
     }
 
-    pub fn from_fingerprint(fingerprint: Fingerprint) -> WorkProductId {
+    pub(crate) fn from_fingerprint(fingerprint: Fingerprint) -> WorkProductId {
         WorkProductId {
             hash: fingerprint
         }

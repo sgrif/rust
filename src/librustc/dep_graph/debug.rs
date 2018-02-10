@@ -21,24 +21,24 @@ use std::error::Error;
 /// where the format-string of the dep-node must contain `x`, `y`, and
 /// `z`.
 #[derive(Debug)]
-pub struct DepNodeFilter {
+pub(crate) struct DepNodeFilter {
     text: String
 }
 
 impl DepNodeFilter {
-    pub fn new(text: &str) -> Self {
+    pub(crate) fn new(text: &str) -> Self {
         DepNodeFilter {
             text: text.trim().to_string()
         }
     }
 
     /// True if all nodes always pass the filter.
-    pub fn accepts_all(&self) -> bool {
+    pub(crate) fn accepts_all(&self) -> bool {
         self.text.is_empty()
     }
 
     /// Tests whether `node` meets the filter, returning true if so.
-    pub fn test(&self, node: &DepNode) -> bool {
+    pub(crate) fn test(&self, node: &DepNode) -> bool {
         let debug_str = format!("{:?}", node);
         self.text.split("&")
                  .map(|s| s.trim())
@@ -48,13 +48,13 @@ impl DepNodeFilter {
 
 /// A filter like `F -> G` where `F` and `G` are valid dep-node
 /// filters. This can be used to test the source/target independently.
-pub struct EdgeFilter {
-    pub source: DepNodeFilter,
-    pub target: DepNodeFilter,
+pub(crate) struct EdgeFilter {
+    pub(crate) source: DepNodeFilter,
+    pub(crate) target: DepNodeFilter,
 }
 
 impl EdgeFilter {
-    pub fn new(test: &str) -> Result<EdgeFilter, Box<Error>> {
+    pub(crate) fn new(test: &str) -> Result<EdgeFilter, Box<Error>> {
         let parts: Vec<_> = test.split("->").collect();
         if parts.len() != 2 {
             Err(format!("expected a filter like `a&b -> c&d`, not `{}`", test).into())
@@ -66,7 +66,7 @@ impl EdgeFilter {
         }
     }
 
-    pub fn test(&self,
+    pub(crate) fn test(&self,
                 source: &DepNode,
                 target: &DepNode)
                 -> bool {

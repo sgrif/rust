@@ -55,13 +55,13 @@ use ty::subst::Substs;
 ///    case this is analogous to transforming a struct. E.g., Box<[i32; 4]> ->
 ///    Box<[i32]> is an `Adjust::Unsize` with the target `Box<[i32]>`.
 #[derive(Clone, RustcEncodable, RustcDecodable)]
-pub struct Adjustment<'tcx> {
-    pub kind: Adjust<'tcx>,
-    pub target: Ty<'tcx>,
+pub(crate) struct Adjustment<'tcx> {
+    pub(crate) kind: Adjust<'tcx>,
+    pub(crate) target: Ty<'tcx>,
 }
 
 #[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
-pub enum Adjust<'tcx> {
+pub(crate) enum Adjust<'tcx> {
     /// Go from ! to any type.
     NeverToAny,
 
@@ -101,13 +101,13 @@ pub enum Adjust<'tcx> {
 /// The target type is `U` in both cases, with the region and mutability
 /// being those shared by both the receiver and the returned reference.
 #[derive(Copy, Clone, PartialEq, Debug, RustcEncodable, RustcDecodable)]
-pub struct OverloadedDeref<'tcx> {
-    pub region: ty::Region<'tcx>,
-    pub mutbl: hir::Mutability,
+pub(crate) struct OverloadedDeref<'tcx> {
+    pub(crate) region: ty::Region<'tcx>,
+    pub(crate) mutbl: hir::Mutability,
 }
 
 impl<'a, 'gcx, 'tcx> OverloadedDeref<'tcx> {
-    pub fn method_call(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, source: Ty<'tcx>)
+    pub(crate) fn method_call(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, source: Ty<'tcx>)
                        -> (DefId, &'tcx Substs<'tcx>) {
         let trait_def_id = match self.mutbl {
             hir::MutImmutable => tcx.lang_items().deref_trait(),
@@ -120,7 +120,7 @@ impl<'a, 'gcx, 'tcx> OverloadedDeref<'tcx> {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, RustcEncodable, RustcDecodable)]
-pub enum AutoBorrowMutability {
+pub(crate) enum AutoBorrowMutability {
     Mutable { allow_two_phase_borrow: bool },
     Immutable,
 }
@@ -135,7 +135,7 @@ impl From<AutoBorrowMutability> for hir::Mutability {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, RustcEncodable, RustcDecodable)]
-pub enum AutoBorrow<'tcx> {
+pub(crate) enum AutoBorrow<'tcx> {
     /// Convert from T to &T.
     Ref(ty::Region<'tcx>, AutoBorrowMutability),
 
@@ -150,16 +150,16 @@ pub enum AutoBorrow<'tcx> {
 /// Demanding this struct also has the side-effect of reporting errors
 /// for inappropriate impls.
 #[derive(Clone, Copy, RustcEncodable, RustcDecodable, Debug)]
-pub struct CoerceUnsizedInfo {
+pub(crate) struct CoerceUnsizedInfo {
     /// If this is a "custom coerce" impl, then what kind of custom
     /// coercion is it? This applies to impls of `CoerceUnsized` for
     /// structs, primarily, where we store a bit of info about which
     /// fields need to be coerced.
-    pub custom_kind: Option<CustomCoerceUnsized>
+    pub(crate) custom_kind: Option<CustomCoerceUnsized>
 }
 
 #[derive(Clone, Copy, RustcEncodable, RustcDecodable, Debug)]
-pub enum CustomCoerceUnsized {
+pub(crate) enum CustomCoerceUnsized {
     /// Records the index of the field being coerced.
     Struct(usize)
 }

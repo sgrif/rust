@@ -22,7 +22,7 @@ use syntax_pos::symbol::InternedString;
 
 /// The `Key` trait controls what types can legally be used as the key
 /// for a query.
-pub trait Key: Clone + Hash + Eq + Debug {
+pub(crate) trait Key: Clone + Hash + Eq + Debug {
     /// Given an instance of this key, what crate is it referring to?
     /// This is used to find the provider.
     fn map_crate(&self) -> CrateNum;

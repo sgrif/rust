@@ -2076,7 +2076,7 @@ impl Item_ {
         }
     }
 
-    pub fn adt_kind(&self) -> Option<AdtKind> {
+    pub(crate) fn adt_kind(&self) -> Option<AdtKind> {
         match *self {
             ItemStruct(..) => Some(AdtKind::Struct),
             ItemUnion(..) => Some(AdtKind::Union),

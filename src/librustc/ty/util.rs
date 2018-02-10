@@ -37,7 +37,7 @@ use syntax_pos::{Span, DUMMY_SP};
 
 type Disr = ConstInt;
 
-pub trait IntTypeExt {
+pub(crate) trait IntTypeExt {
     fn to_ty<'a, 'gcx, 'tcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Ty<'tcx>;
     fn disr_incr<'a, 'tcx>(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>, val: Option<Disr>)
                            -> Option<Disr>;
@@ -128,7 +128,7 @@ impl IntTypeExt for attr::IntType {
 
 
 #[derive(Copy, Clone)]
-pub enum CopyImplementationError<'tcx> {
+pub(crate) enum CopyImplementationError<'tcx> {
     InfrigingField(&'tcx ty::FieldDef),
     NotAnAdt,
     HasDestructor,
@@ -143,7 +143,7 @@ pub enum CopyImplementationError<'tcx> {
 /// The ordering of the cases is significant. They are sorted so that cmp::max
 /// will keep the "more erroneous" of two values.
 #[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Debug)]
-pub enum Representability {
+pub(crate) enum Representability {
     Representable,
     ContainsRecursive,
     SelfRecursive(Vec<Span>),
@@ -152,12 +152,12 @@ pub enum Representability {
 impl<'tcx> ty::ParamEnv<'tcx> {
     /// Construct a trait environment suitable for contexts where
     /// there are no where clauses in scope.
-    pub fn empty(reveal: Reveal) -> Self {
+    pub(crate) fn empty(reveal: Reveal) -> Self {
         Self::new(ty::Slice::empty(), reveal)
     }
 
     /// Construct a trait environment with the given set of predicates.
-    pub fn new(caller_bounds: &'tcx ty::Slice<ty::Predicate<'tcx>>,
+    pub(crate) fn new(caller_bounds: &'tcx ty::Slice<ty::Predicate<'tcx>>,
                reveal: Reveal)
                -> Self {
         ty::ParamEnv { caller_bounds, reveal }
@@ -169,11 +169,11 @@ impl<'tcx> ty::ParamEnv<'tcx> {
     /// the desired behavior during trans and certain other special
     /// contexts; normally though we want to use `Reveal::UserFacing`,
     /// which is the default.
-    pub fn reveal_all(self) -> Self {
+    pub(crate) fn reveal_all(self) -> Self {
         ty::ParamEnv { reveal: Reveal::All, ..self }
     }
 
-    pub fn can_type_implement_copy<'a>(self,
+    pub(crate) fn can_type_implement_copy<'a>(self,
                                        tcx: TyCtxt<'a, 'tcx, 'tcx>,
                                        self_type: Ty<'tcx>, span: Span)
                                        -> Result<(), CopyImplementationError<'tcx>> {
@@ -212,7 +212,7 @@ impl<'tcx> ty::ParamEnv<'tcx> {
 impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
     /// Creates a hash of the type `Ty` which will be the same no matter what crate
     /// context it's calculated within. This is used by the `type_id` intrinsic.
-    pub fn type_id_hash(self, ty: Ty<'tcx>) -> u64 {
+    pub(crate) fn type_id_hash(self, ty: Ty<'tcx>) -> u64 {
         let mut hasher = StableHasher::new();
         let mut hcx = self.create_stable_hashing_context();
 
@@ -231,7 +231,7 @@ impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn has_error_field(self, ty: Ty<'tcx>) -> bool {
+    pub(crate) fn has_error_field(self, ty: Ty<'tcx>) -> bool {
         match ty.sty {
             ty::TyAdt(def, substs) => {
                 for field in def.all_fields() {
@@ -248,7 +248,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 
     /// Returns the type of element at index `i` in tuple or tuple-like type `t`.
     /// For an enum `t`, `variant` is None only if `t` is a univariant enum.
-    pub fn positional_element_ty(self,
+    pub(crate) fn positional_element_ty(self,
                                  ty: Ty<'tcx>,
                                  i: usize,
                                  variant: Option<DefId>) -> Option<Ty<'tcx>> {
@@ -267,7 +267,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 
     /// Returns the type of element at field `n` in struct or struct-like type `t`.
     /// For an enum `t`, `variant` must be some def id.
-    pub fn named_element_ty(self,
+    pub(crate) fn named_element_ty(self,
                             ty: Ty<'tcx>,
                             n: Name,
                             variant: Option<DefId>) -> Option<Ty<'tcx>> {
@@ -285,7 +285,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Returns the deeply last field of nested structures, or the same type,
     /// if not a structure at all. Corresponds to the only possible unsized
     /// field, and its type can be used to determine unsizing strategy.
-    pub fn struct_tail(self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub(crate) fn struct_tail(self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
         loop {
             match ty.sty {
                 ty::TyAdt(def, substs) => {
@@ -319,7 +319,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// structure definitions.
     /// For `(Foo<Foo<T>>, Foo<Trait>)`, the result will be `(Foo<T>, Trait)`,
     /// whereas struct_tail produces `T`, and `Trait`, respectively.
-    pub fn struct_lockstep_tails(self,
+    pub(crate) fn struct_lockstep_tails(self,
                                  source: Ty<'tcx>,
                                  target: Ty<'tcx>)
                                  -> (Ty<'tcx>, Ty<'tcx>) {
@@ -369,7 +369,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     ///
     /// FIXME callers may only have a &[Predicate], not a Vec, so that's
     /// what this code should accept.
-    pub fn required_region_bounds(self,
+    pub(crate) fn required_region_bounds(self,
                                   erased_self_ty: Ty<'tcx>,
                                   predicates: Vec<ty::Predicate<'tcx>>)
                                   -> Vec<ty::Region<'tcx>>    {
@@ -415,7 +415,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     }
 
     /// Calculate the destructor of a given type.
-    pub fn calculate_dtor(
+    pub(crate) fn calculate_dtor(
         self,
         adt_did: DefId,
         validate: &mut FnMut(Self, DefId) -> Result<(), ErrorReported>
@@ -448,7 +448,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Note that this returns only the constraints for the
     /// destructor of `def` itself. For the destructors of the
     /// contents, you need `adt_dtorck_constraint`.
-    pub fn destructor_constraints(self, def: &'tcx ty::AdtDef)
+    pub(crate) fn destructor_constraints(self, def: &'tcx ty::AdtDef)
                                   -> Vec<ty::subst::Kind<'tcx>>
     {
         let dtor = match def.destructor(self) {
@@ -527,7 +527,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 
     /// Return a set of constraints that needs to be satisfied in
     /// order for `ty` to be valid for destruction.
-    pub fn dtorck_constraint_for_ty(self,
+    pub(crate) fn dtorck_constraint_for_ty(self,
                                     span: Span,
                                     for_ty: Ty<'tcx>,
                                     depth: usize,
@@ -618,7 +618,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         result
     }
 
-    pub fn is_closure(self, def_id: DefId) -> bool {
+    pub(crate) fn is_closure(self, def_id: DefId) -> bool {
         self.def_key(def_id).disambiguated_data.data == DefPathData::ClosureExpr
     }
 
@@ -629,7 +629,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// (transitive) closures together.  Therefore, when we fetch the
     /// `typeck_tables_of` the closure, for example, we really wind up
     /// fetching the `typeck_tables_of` the enclosing fn item.
-    pub fn closure_base_def_id(self, def_id: DefId) -> DefId {
+    pub(crate) fn closure_base_def_id(self, def_id: DefId) -> DefId {
         let mut def_id = def_id;
         while self.is_closure(def_id) {
             def_id = self.parent_def_id(def_id).unwrap_or_else(|| {
@@ -649,7 +649,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     ///
     /// Note that the return value is a late-bound region and hence
     /// wrapped in a binder.
-    pub fn closure_env_ty(self,
+    pub(crate) fn closure_env_ty(self,
                           closure_def_id: DefId,
                           closure_substs: ty::ClosureSubsts<'tcx>)
                           -> Option<ty::Binder<Ty<'tcx>>>
@@ -668,7 +668,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 
     /// Given the def-id of some item that has no type parameters, make
     /// a suitable "empty substs" for it.
-    pub fn empty_substs_for_def_id(self, item_def_id: DefId) -> &'tcx ty::Substs<'tcx> {
+    pub(crate) fn empty_substs_for_def_id(self, item_def_id: DefId) -> &'tcx ty::Substs<'tcx> {
         ty::Substs::for_item(self, item_def_id,
                              |_, _| self.types.re_erased,
                              |_, _| {
@@ -676,7 +676,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         })
     }
 
-    pub fn const_usize(&self, val: u16) -> ConstInt {
+    pub(crate) fn const_usize(&self, val: u16) -> ConstInt {
         match self.sess.target.usize_ty {
             ast::UintTy::U16 => ConstInt::Usize(ConstUsize::Us16(val as u16)),
             ast::UintTy::U32 => ConstInt::Usize(ConstUsize::Us32(val as u32)),
@@ -686,7 +686,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     }
 
     /// Check if the node pointed to by def_id is a mutable static item
-    pub fn is_static_mut(&self, def_id: DefId) -> bool {
+    pub(crate) fn is_static_mut(&self, def_id: DefId) -> bool {
         if let Some(node) = self.hir.get_if_local(def_id) {
             match node {
                 Node::NodeItem(&hir::Item {
@@ -706,7 +706,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     }
 }
 
-pub struct TypeIdHasher<'a, 'gcx: 'a+'tcx, 'tcx: 'a, W> {
+pub(crate) struct TypeIdHasher<'a, 'gcx: 'a+'tcx, 'tcx: 'a, W> {
     tcx: TyCtxt<'a, 'gcx, 'tcx>,
     state: StableHasher<W>,
 }
@@ -714,15 +714,15 @@ pub struct TypeIdHasher<'a, 'gcx: 'a+'tcx, 'tcx: 'a, W> {
 impl<'a, 'gcx, 'tcx, W> TypeIdHasher<'a, 'gcx, 'tcx, W>
     where W: StableHasherResult
 {
-    pub fn new(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Self {
         TypeIdHasher { tcx: tcx, state: StableHasher::new() }
     }
 
-    pub fn finish(self) -> W {
+    pub(crate) fn finish(self) -> W {
         self.state.finish()
     }
 
-    pub fn hash<T: Hash>(&mut self, x: T) {
+    pub(crate) fn hash<T: Hash>(&mut self, x: T) {
         x.hash(&mut self.state);
     }
 
@@ -850,7 +850,7 @@ impl<'a, 'gcx, 'tcx, W> TypeVisitor<'tcx> for TypeIdHasher<'a, 'gcx, 'tcx, W>
 }
 
 impl<'a, 'tcx> ty::TyS<'tcx> {
-    pub fn moves_by_default(&'tcx self,
+    pub(crate) fn moves_by_default(&'tcx self,
                             tcx: TyCtxt<'a, 'tcx, 'tcx>,
                             param_env: ty::ParamEnv<'tcx>,
                             span: Span)
@@ -858,7 +858,7 @@ impl<'a, 'tcx> ty::TyS<'tcx> {
         !tcx.at(span).is_copy_raw(param_env.and(self))
     }
 
-    pub fn is_sized(&'tcx self,
+    pub(crate) fn is_sized(&'tcx self,
                     tcx: TyCtxt<'a, 'tcx, 'tcx>,
                     param_env: ty::ParamEnv<'tcx>,
                     span: Span)-> bool
@@ -866,7 +866,7 @@ impl<'a, 'tcx> ty::TyS<'tcx> {
         tcx.at(span).is_sized_raw(param_env.and(self))
     }
 
-    pub fn is_freeze(&'tcx self,
+    pub(crate) fn is_freeze(&'tcx self,
                      tcx: TyCtxt<'a, 'tcx, 'tcx>,
                      param_env: ty::ParamEnv<'tcx>,
                      span: Span)-> bool
@@ -881,7 +881,7 @@ impl<'a, 'tcx> ty::TyS<'tcx> {
     /// (Note that this implies that if `ty` has a destructor attached,
     /// then `needs_drop` will definitely return `true` for `ty`.)
     #[inline]
-    pub fn needs_drop(&'tcx self,
+    pub(crate) fn needs_drop(&'tcx self,
                       tcx: TyCtxt<'a, 'tcx, 'tcx>,
                       param_env: ty::ParamEnv<'tcx>)
                       -> bool {
@@ -890,7 +890,7 @@ impl<'a, 'tcx> ty::TyS<'tcx> {
 
     /// Check whether a type is representable. This means it cannot contain unboxed
     /// structural recursion. This check is needed for structs and enums.
-    pub fn is_representable(&'tcx self,
+    pub(crate) fn is_representable(&'tcx self,
                             tcx: TyCtxt<'a, 'tcx, 'tcx>,
                             sp: Span)
                             -> Representability {
@@ -1196,7 +1196,7 @@ fn needs_drop_raw<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
     }
 }
 
-pub enum ExplicitSelf<'tcx> {
+pub(crate) enum ExplicitSelf<'tcx> {
     ByValue,
     ByReference(ty::Region<'tcx>, hir::Mutability),
     ByRawPointer(hir::Mutability),
@@ -1229,7 +1229,7 @@ impl<'tcx> ExplicitSelf<'tcx> {
     /// }
     /// ```
     ///
-    pub fn determine<P>(
+    pub(crate) fn determine<P>(
         self_arg_ty: Ty<'tcx>,
         is_self_ty: P
     ) -> ExplicitSelf<'tcx>
@@ -1254,7 +1254,7 @@ impl<'tcx> ExplicitSelf<'tcx> {
     }
 }
 
-pub fn provide(providers: &mut ty::maps::Providers) {
+pub(crate) fn provide(providers: &mut ty::maps::Providers) {
     *providers = ty::maps::Providers {
         is_copy_raw,
         is_sized_raw,

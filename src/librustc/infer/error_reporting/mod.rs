@@ -78,10 +78,10 @@ mod note;
 
 mod need_type_info;
 
-pub mod nice_region_error;
+pub(crate) mod nice_region_error;
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn note_and_explain_region(self,
+    pub(crate) fn note_and_explain_region(self,
                                    region_scope_tree: &region::ScopeTree,
                                    err: &mut DiagnosticBuilder,
                                    prefix: &str,
@@ -256,7 +256,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
-    pub fn report_region_errors(&self,
+    pub(crate) fn report_region_errors(&self,
                                 region_scope_tree: &region::ScopeTree,
                                 errors: &Vec<RegionResolutionError<'tcx>>,
                                 will_later_be_reported_by_nll: bool) {
@@ -769,7 +769,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn note_type_err(&self,
+    pub(crate) fn note_type_err(&self,
                          diag: &mut DiagnosticBuilder<'tcx>,
                          cause: &ObligationCause<'tcx>,
                          secondary_span: Option<(Span, String)>,
@@ -861,7 +861,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         self.note_error_origin(diag, &cause);
     }
 
-    pub fn report_and_explain_type_error(&self,
+    pub(crate) fn report_and_explain_type_error(&self,
                                          trace: TypeTrace<'tcx>,
                                          terr: &TypeError<'tcx>)
                                          -> DiagnosticBuilder<'tcx>
@@ -926,7 +926,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
               DiagnosticStyledString::highlighted(format!("{}", exp_found.found))))
     }
 
-    pub fn report_generic_bound_failure(&self,
+    pub(crate) fn report_generic_bound_failure(&self,
                                         region_scope_tree: &region::ScopeTree,
                                         span: Span,
                                         origin: Option<SubregionOrigin<'tcx>>,

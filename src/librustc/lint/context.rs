@@ -52,7 +52,7 @@ use syntax::visit as ast_visit;
 ///
 /// This is basically the subset of `Context` that we can
 /// build early in the compile pipeline.
-pub struct LintStore {
+pub(crate) struct LintStore {
     /// Registered lints. The bool is true if the lint was
     /// added by a plugin.
     lints: Vec<(&'static Lint, bool)>,
@@ -75,7 +75,7 @@ pub struct LintStore {
     future_incompatible: FxHashMap<LintId, FutureIncompatibleInfo>,
 }
 
-pub struct LintSession<'a, PassObject> {
+pub(crate) struct LintSession<'a, PassObject> {
     /// Reference to the store of registered lints.
     lints: Ref<'a, LintStore>,
 
@@ -87,19 +87,19 @@ pub struct LintSession<'a, PassObject> {
 /// Lints that are buffered up early on in the `Session` before the
 /// `LintLevels` is calculated
 #[derive(PartialEq, RustcEncodable, RustcDecodable, Debug)]
-pub struct BufferedEarlyLint {
-    pub lint_id: LintId,
-    pub ast_id: ast::NodeId,
-    pub span: MultiSpan,
-    pub msg: String,
+pub(crate) struct BufferedEarlyLint {
+    pub(crate) lint_id: LintId,
+    pub(crate) ast_id: ast::NodeId,
+    pub(crate) span: MultiSpan,
+    pub(crate) msg: String,
 }
 
 /// Extra information for a future incompatibility lint. See the call
 /// to `register_future_incompatible` in `librustc_lint/lib.rs` for
 /// guidelines.
-pub struct FutureIncompatibleInfo {
-    pub id: LintId,
-    pub reference: &'static str // e.g., a URL for an issue/PR/RFC or error code
+pub(crate) struct FutureIncompatibleInfo {
+    pub(crate) id: LintId,
+    pub(crate) reference: &'static str // e.g., a URL for an issue/PR/RFC or error code
 }
 
 /// The target of the `by_name` map, which accounts for renaming/deprecation.
@@ -115,12 +115,12 @@ enum TargetLint {
     Removed(String),
 }
 
-pub enum FindLintError {
+pub(crate) enum FindLintError {
     NotFound,
     Removed,
 }
 
-pub enum CheckLintNameResult<'a> {
+pub(crate) enum CheckLintNameResult<'a> {
     Ok(&'a [LintId]),
     /// Lint doesn't exist
     NoLint,
@@ -130,7 +130,7 @@ pub enum CheckLintNameResult<'a> {
 }
 
 impl LintStore {
-    pub fn new() -> LintStore {
+    pub(crate) fn new() -> LintStore {
         LintStore {
             lints: vec![],
             early_passes: Some(vec![]),
@@ -141,17 +141,17 @@ impl LintStore {
         }
     }
 
-    pub fn get_lints<'t>(&'t self) -> &'t [(&'static Lint, bool)] {
+    pub(crate) fn get_lints<'t>(&'t self) -> &'t [(&'static Lint, bool)] {
         &self.lints
     }
 
-    pub fn get_lint_groups<'t>(&'t self) -> Vec<(&'static str, Vec<LintId>, bool)> {
+    pub(crate) fn get_lint_groups<'t>(&'t self) -> Vec<(&'static str, Vec<LintId>, bool)> {
         self.lint_groups.iter().map(|(k, v)| (*k,
                                               v.0.clone(),
                                               v.1)).collect()
     }
 
-    pub fn register_early_pass(&mut self,
+    pub(crate) fn register_early_pass(&mut self,
                                sess: Option<&Session>,
                                from_plugin: bool,
                                pass: EarlyLintPassObject) {
@@ -159,7 +159,7 @@ impl LintStore {
         self.early_passes.as_mut().unwrap().push(pass);
     }
 
-    pub fn register_late_pass(&mut self,
+    pub(crate) fn register_late_pass(&mut self,
                               sess: Option<&Session>,
                               from_plugin: bool,
                               pass: LateLintPassObject) {
@@ -191,7 +191,7 @@ impl LintStore {
         }
     }
 
-    pub fn register_future_incompatible(&mut self,
+    pub(crate) fn register_future_incompatible(&mut self,
                                         sess: Option<&Session>,
                                         lints: Vec<FutureIncompatibleInfo>) {
         let ids = lints.iter().map(|f| f.id).collect();
@@ -201,11 +201,11 @@ impl LintStore {
         }
     }
 
-    pub fn future_incompatible(&self, id: LintId) -> Option<&FutureIncompatibleInfo> {
+    pub(crate) fn future_incompatible(&self, id: LintId) -> Option<&FutureIncompatibleInfo> {
         self.future_incompatible.get(&id)
     }
 
-    pub fn register_group(&mut self, sess: Option<&Session>,
+    pub(crate) fn register_group(&mut self, sess: Option<&Session>,
                           from_plugin: bool, name: &'static str,
                           to: Vec<LintId>) {
         let new = self.lint_groups.insert(name, (to, from_plugin)).is_none();
@@ -224,7 +224,7 @@ impl LintStore {
         }
     }
 
-    pub fn register_renamed(&mut self, old_name: &str, new_name: &str) {
+    pub(crate) fn register_renamed(&mut self, old_name: &str, new_name: &str) {
         let target = match self.by_name.get(new_name) {
             Some(&Id(lint_id)) => lint_id.clone(),
             _ => bug!("invalid lint renaming of {} to {}", old_name, new_name)
@@ -232,11 +232,11 @@ impl LintStore {
         self.by_name.insert(old_name.to_string(), Renamed(new_name.to_string(), target));
     }
 
-    pub fn register_removed(&mut self, name: &str, reason: &str) {
+    pub(crate) fn register_removed(&mut self, name: &str, reason: &str) {
         self.by_name.insert(name.into(), Removed(reason.into()));
     }
 
-    pub fn find_lints(&self, lint_name: &str) -> Result<Vec<LintId>, FindLintError> {
+    pub(crate) fn find_lints(&self, lint_name: &str) -> Result<Vec<LintId>, FindLintError> {
         match self.by_name.get(lint_name) {
             Some(&Id(lint_id)) => Ok(vec![lint_id]),
             Some(&Renamed(_, lint_id)) => {
@@ -255,7 +255,7 @@ impl LintStore {
     }
 
     /// Checks the validity of lint names derived from the command line
-    pub fn check_lint_name_cmdline(&self,
+    pub(crate) fn check_lint_name_cmdline(&self,
                                    sess: &Session,
                                    lint_name: &str,
                                    level: Level) {
@@ -290,7 +290,7 @@ impl LintStore {
     /// it emits non-fatal warnings and there are *two* lint passes that
     /// inspect attributes, this is only run from the late pass to avoid
     /// printing duplicate warnings.
-    pub fn check_lint_name(&self, lint_name: &str) -> CheckLintNameResult {
+    pub(crate) fn check_lint_name(&self, lint_name: &str) -> CheckLintNameResult {
         match self.by_name.get(lint_name) {
             Some(&Renamed(ref new_name, _)) => {
                 CheckLintNameResult::Warning(
@@ -336,18 +336,18 @@ impl<'a, PassObject: LintPassObject> LintSession<'a, PassObject> {
 }
 
 /// Context for lint checking after type checking.
-pub struct LateContext<'a, 'tcx: 'a> {
+pub(crate) struct LateContext<'a, 'tcx: 'a> {
     /// Type context we're checking in.
-    pub tcx: TyCtxt<'a, 'tcx, 'tcx>,
+    pub(crate) tcx: TyCtxt<'a, 'tcx, 'tcx>,
 
     /// Side-tables for the body we are in.
-    pub tables: &'a ty::TypeckTables<'tcx>,
+    pub(crate) tables: &'a ty::TypeckTables<'tcx>,
 
     /// Parameter environment for the item we are in.
-    pub param_env: ty::ParamEnv<'tcx>,
+    pub(crate) param_env: ty::ParamEnv<'tcx>,
 
     /// Items accessible from the crate being checked.
-    pub access_levels: &'a AccessLevels,
+    pub(crate) access_levels: &'a AccessLevels,
 
     /// The store of registered lints and the lint levels.
     lint_sess: LintSession<'tcx, LateLintPassObject>,
@@ -355,17 +355,17 @@ pub struct LateContext<'a, 'tcx: 'a> {
     last_ast_node_with_lint_attrs: ast::NodeId,
 
     /// Generic type parameters in scope for the item we are in.
-    pub generics: Option<&'tcx hir::Generics>,
+    pub(crate) generics: Option<&'tcx hir::Generics>,
 }
 
 /// Context for lint checking of the AST, after expansion, before lowering to
 /// HIR.
-pub struct EarlyContext<'a> {
+pub(crate) struct EarlyContext<'a> {
     /// Type context we're checking in.
-    pub sess: &'a Session,
+    pub(crate) sess: &'a Session,
 
     /// The crate being checked.
-    pub krate: &'a ast::Crate,
+    pub(crate) krate: &'a ast::Crate,
 
     builder: LintLevelsBuilder<'a>,
 
@@ -386,7 +386,7 @@ macro_rules! run_lints { ($cx:expr, $f:ident, $ps:ident, $($args:expr),*) => ({
     $cx.lint_sess_mut().passes = Some(passes);
 }) }
 
-pub trait LintPassObject: Sized {
+pub(crate) trait LintPassObject: Sized {
     fn take_passes(store: &mut LintStore) -> Option<Vec<Self>>;
     fn restore_passes(store: &mut LintStore, passes: Option<Vec<Self>>);
 }
@@ -412,7 +412,7 @@ impl LintPassObject for LateLintPassObject {
 }
 
 
-pub trait LintContext<'tcx>: Sized {
+pub(crate) trait LintContext<'tcx>: Sized {
     type PassObject: LintPassObject;
 
     fn sess(&self) -> &Session;
@@ -995,7 +995,7 @@ impl<'a> ast_visit::Visitor<'a> for EarlyContext<'a> {
 /// Perform lint checking on a crate.
 ///
 /// Consumes the `lint_store` field of the `Session`.
-pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let access_levels = &tcx.privacy_access_levels(LOCAL_CRATE);
 
     let krate = tcx.hir.krate();
@@ -1025,7 +1025,7 @@ pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     cx.lint_sess.restore(&tcx.sess.lint_store);
 }
 
-pub fn check_ast_crate(sess: &Session, krate: &ast::Crate) {
+pub(crate) fn check_ast_crate(sess: &Session, krate: &ast::Crate) {
     let mut cx = EarlyContext::new(sess, krate);
 
     // Visit the whole crate.

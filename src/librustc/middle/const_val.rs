@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub use rustc_const_math::ConstInt;
+pub(crate) use rustc_const_math::ConstInt;
 
 use hir::def_id::DefId;
 use ty::{self, TyCtxt, layout};
@@ -24,10 +24,10 @@ use syntax_pos::Span;
 
 use std::borrow::Cow;
 
-pub type EvalResult<'tcx> = Result<&'tcx ty::Const<'tcx>, ConstEvalErr<'tcx>>;
+pub(crate) type EvalResult<'tcx> = Result<&'tcx ty::Const<'tcx>, ConstEvalErr<'tcx>>;
 
 #[derive(Copy, Clone, Debug, Hash, RustcEncodable, RustcDecodable, Eq, PartialEq)]
-pub enum ConstVal<'tcx> {
+pub(crate) enum ConstVal<'tcx> {
     Integral(ConstInt),
     Float(ConstFloat),
     Str(InternedString),
@@ -41,14 +41,14 @@ pub enum ConstVal<'tcx> {
 }
 
 #[derive(Copy, Clone, Debug, Hash, RustcEncodable, Eq, PartialEq)]
-pub struct ByteArray<'tcx> {
-    pub data: &'tcx [u8],
+pub(crate) struct ByteArray<'tcx> {
+    pub(crate) data: &'tcx [u8],
 }
 
 impl<'tcx> serialize::UseSpecializedDecodable for ByteArray<'tcx> {}
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum ConstAggregate<'tcx> {
+pub(crate) enum ConstAggregate<'tcx> {
     Struct(&'tcx [(ast::Name, &'tcx ty::Const<'tcx>)]),
     Tuple(&'tcx [&'tcx ty::Const<'tcx>]),
     Array(&'tcx [&'tcx ty::Const<'tcx>]),
@@ -68,7 +68,7 @@ impl<'tcx> Decodable for ConstAggregate<'tcx> {
 }
 
 impl<'tcx> ConstVal<'tcx> {
-    pub fn to_const_int(&self) -> Option<ConstInt> {
+    pub(crate) fn to_const_int(&self) -> Option<ConstInt> {
         match *self {
             ConstVal::Integral(i) => Some(i),
             ConstVal::Bool(b) => Some(ConstInt::U8(b as u8)),
@@ -79,13 +79,13 @@ impl<'tcx> ConstVal<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConstEvalErr<'tcx> {
-    pub span: Span,
-    pub kind: ErrKind<'tcx>,
+pub(crate) struct ConstEvalErr<'tcx> {
+    pub(crate) span: Span,
+    pub(crate) kind: ErrKind<'tcx>,
 }
 
 #[derive(Clone, Debug)]
-pub enum ErrKind<'tcx> {
+pub(crate) enum ErrKind<'tcx> {
     CannotCast,
     MissingStructField,
 
@@ -120,13 +120,13 @@ impl<'tcx> From<ConstMathErr> for ErrKind<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum ConstEvalErrDescription<'a> {
+pub(crate) enum ConstEvalErrDescription<'a> {
     Simple(Cow<'a, str>),
 }
 
 impl<'a> ConstEvalErrDescription<'a> {
     /// Return a one-line description of the error, for lints and such
-    pub fn into_oneline(self) -> Cow<'a, str> {
+    pub(crate) fn into_oneline(self) -> Cow<'a, str> {
         match self {
             ConstEvalErrDescription::Simple(simple) => simple,
         }
@@ -134,7 +134,7 @@ impl<'a> ConstEvalErrDescription<'a> {
 }
 
 impl<'a, 'gcx, 'tcx> ConstEvalErr<'tcx> {
-    pub fn description(&self) -> ConstEvalErrDescription {
+    pub(crate) fn description(&self) -> ConstEvalErrDescription {
         use self::ErrKind::*;
         use self::ConstEvalErrDescription::*;
 
@@ -173,7 +173,7 @@ impl<'a, 'gcx, 'tcx> ConstEvalErr<'tcx> {
         }
     }
 
-    pub fn struct_error(&self,
+    pub(crate) fn struct_error(&self,
         tcx: TyCtxt<'a, 'gcx, 'tcx>,
         primary_span: Span,
         primary_kind: &str)
@@ -191,7 +191,7 @@ impl<'a, 'gcx, 'tcx> ConstEvalErr<'tcx> {
         diag
     }
 
-    pub fn note(&self,
+    pub(crate) fn note(&self,
         _tcx: TyCtxt<'a, 'gcx, 'tcx>,
         primary_span: Span,
         primary_kind: &str,
@@ -209,7 +209,7 @@ impl<'a, 'gcx, 'tcx> ConstEvalErr<'tcx> {
         }
     }
 
-    pub fn report(&self,
+    pub(crate) fn report(&self,
         tcx: TyCtxt<'a, 'gcx, 'tcx>,
         primary_span: Span,
         primary_kind: &str)

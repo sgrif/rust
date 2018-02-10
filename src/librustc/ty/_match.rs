@@ -28,12 +28,12 @@ use ty::relate::{self, Relate, TypeRelation, RelateResult};
 /// Like subtyping, matching is really a binary relation, so the only
 /// important thing about the result is Ok/Err. Also, matching never
 /// affects any type variables or unification state.
-pub struct Match<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct Match<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     tcx: TyCtxt<'a, 'gcx, 'tcx>
 }
 
 impl<'a, 'gcx, 'tcx> Match<'a, 'gcx, 'tcx> {
-    pub fn new(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Match<'a, 'gcx, 'tcx> {
+    pub(crate) fn new(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> Match<'a, 'gcx, 'tcx> {
         Match { tcx: tcx }
     }
 }

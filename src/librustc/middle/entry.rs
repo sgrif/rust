@@ -55,7 +55,7 @@ impl<'a, 'tcx> ItemLikeVisitor<'tcx> for EntryContext<'a, 'tcx> {
     }
 }
 
-pub fn find_entry_point(session: &Session, hir_map: &hir_map::Map) {
+pub(crate) fn find_entry_point(session: &Session, hir_map: &hir_map::Map) {
     let any_exe = session.crate_types.borrow().iter().any(|ty| {
         *ty == config::CrateTypeExecutable
     });

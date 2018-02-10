@@ -16,23 +16,23 @@ use hir::def_id::DefId;
 use hir::{HirId, ItemLocalId};
 use syntax::ast;
 
-pub use rustc_data_structures::fx::FxHashMap;
-pub use rustc_data_structures::fx::FxHashSet;
+pub(crate) use rustc_data_structures::fx::FxHashMap;
+pub(crate) use rustc_data_structures::fx::FxHashSet;
 
-pub type NodeMap<T> = FxHashMap<ast::NodeId, T>;
-pub type DefIdMap<T> = FxHashMap<DefId, T>;
-pub type HirIdMap<T> = FxHashMap<HirId, T>;
-pub type ItemLocalMap<T> = FxHashMap<ItemLocalId, T>;
+pub(crate) type NodeMap<T> = FxHashMap<ast::NodeId, T>;
+pub(crate) type DefIdMap<T> = FxHashMap<DefId, T>;
+pub(crate) type HirIdMap<T> = FxHashMap<HirId, T>;
+pub(crate) type ItemLocalMap<T> = FxHashMap<ItemLocalId, T>;
 
-pub type NodeSet = FxHashSet<ast::NodeId>;
-pub type DefIdSet = FxHashSet<DefId>;
-pub type HirIdSet = FxHashSet<HirId>;
-pub type ItemLocalSet = FxHashSet<ItemLocalId>;
+pub(crate) type NodeSet = FxHashSet<ast::NodeId>;
+pub(crate) type DefIdSet = FxHashSet<DefId>;
+pub(crate) type HirIdSet = FxHashSet<HirId>;
+pub(crate) type ItemLocalSet = FxHashSet<ItemLocalId>;
 
-pub fn NodeMap<T>() -> NodeMap<T> { FxHashMap() }
-pub fn DefIdMap<T>() -> DefIdMap<T> { FxHashMap() }
-pub fn ItemLocalMap<T>() -> ItemLocalMap<T> { FxHashMap() }
-pub fn NodeSet() -> NodeSet { FxHashSet() }
-pub fn DefIdSet() -> DefIdSet { FxHashSet() }
-pub fn ItemLocalSet() -> ItemLocalSet { FxHashSet() }
+pub(crate) fn NodeMap<T>() -> NodeMap<T> { FxHashMap() }
+pub(crate) fn DefIdMap<T>() -> DefIdMap<T> { FxHashMap() }
+pub(crate) fn ItemLocalMap<T>() -> ItemLocalMap<T> { FxHashMap() }
+pub(crate) fn NodeSet() -> NodeSet { FxHashSet() }
+pub(crate) fn DefIdSet() -> DefIdSet { FxHashSet() }
+pub(crate) fn ItemLocalSet() -> ItemLocalSet { FxHashSet() }
 

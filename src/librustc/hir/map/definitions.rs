@@ -490,7 +490,7 @@ impl Definitions {
     }
 
     /// Add a definition with a parent definition.
-    pub fn create_root_def(&mut self,
+    pub(crate) fn create_root_def(&mut self,
                            crate_name: &str,
                            crate_disambiguator: CrateDisambiguator)
                            -> DefIndex {

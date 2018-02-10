@@ -32,14 +32,14 @@ use std::rc::Rc;
 
 use lint;
 
-pub mod specialization_graph;
+pub(crate) mod specialization_graph;
 
 /// Information pertinent to an overlapping impl error.
-pub struct OverlapError {
-    pub with_impl: DefId,
-    pub trait_desc: String,
-    pub self_desc: Option<String>,
-    pub intercrate_ambiguity_causes: Vec<IntercrateAmbiguityCause>,
+pub(crate) struct OverlapError {
+    pub(crate) with_impl: DefId,
+    pub(crate) trait_desc: String,
+    pub(crate) self_desc: Option<String>,
+    pub(crate) intercrate_ambiguity_causes: Vec<IntercrateAmbiguityCause>,
 }
 
 /// Given a subst for the requested impl, translate it to a subst
@@ -77,7 +77,7 @@ pub struct OverlapError {
 /// through associated type projection. We deal with such cases by using
 /// *fulfillment* to relate the two impls, requiring that all projections are
 /// resolved.
-pub fn translate_substs<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn translate_substs<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                         param_env: ty::ParamEnv<'tcx>,
                                         source_impl: DefId,
                                         source_substs: &'tcx Substs<'tcx>,
@@ -115,7 +115,7 @@ pub fn translate_substs<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
 /// the kind `kind`, and trait method substitutions `substs`, in
 /// that impl, a less specialized impl, or the trait default,
 /// whichever applies.
-pub fn find_associated_item<'a, 'tcx>(
+pub(crate) fn find_associated_item<'a, 'tcx>(
     tcx: TyCtxt<'a, 'tcx, 'tcx>,
     item: &ty::AssociatedItem,
     substs: &'tcx Substs<'tcx>,
@@ -283,22 +283,22 @@ fn fulfill_implication<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
     })
 }
 
-pub struct SpecializesCache {
+pub(crate) struct SpecializesCache {
     map: FxHashMap<(DefId, DefId), bool>,
 }
 
 impl SpecializesCache {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         SpecializesCache {
             map: FxHashMap()
         }
     }
 
-    pub fn check(&self, a: DefId, b: DefId) -> Option<bool> {
+    pub(crate) fn check(&self, a: DefId, b: DefId) -> Option<bool> {
         self.map.get(&(a, b)).cloned()
     }
 
-    pub fn insert(&mut self, a: DefId, b: DefId, result: bool) {
+    pub(crate) fn insert(&mut self, a: DefId, b: DefId, result: bool) {
         self.map.insert((a, b), result);
     }
 }

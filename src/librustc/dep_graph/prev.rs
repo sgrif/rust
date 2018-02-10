@@ -14,13 +14,13 @@ use super::dep_node::DepNode;
 use super::serialized::{SerializedDepGraph, SerializedDepNodeIndex};
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
-pub struct PreviousDepGraph {
+pub(crate) struct PreviousDepGraph {
     data: SerializedDepGraph,
     index: FxHashMap<DepNode, SerializedDepNodeIndex>,
 }
 
 impl PreviousDepGraph {
-    pub fn new(data: SerializedDepGraph) -> PreviousDepGraph {
+    pub(crate) fn new(data: SerializedDepGraph) -> PreviousDepGraph {
         let index: FxHashMap<_, _> = data.nodes
             .iter_enumerated()
             .map(|(idx, &(dep_node, _))| (dep_node, idx))
@@ -29,7 +29,7 @@ impl PreviousDepGraph {
     }
 
     #[inline]
-    pub fn edges_from(&self,
+    pub(crate) fn edges_from(&self,
                       dep_node: &DepNode)
                       -> Option<(&[SerializedDepNodeIndex], SerializedDepNodeIndex)> {
         self.index
@@ -40,30 +40,30 @@ impl PreviousDepGraph {
     }
 
     #[inline]
-    pub fn index_to_node(&self, dep_node_index: SerializedDepNodeIndex) -> DepNode {
+    pub(crate) fn index_to_node(&self, dep_node_index: SerializedDepNodeIndex) -> DepNode {
         self.data.nodes[dep_node_index].0
     }
 
     #[inline]
-    pub fn node_to_index(&self, dep_node: &DepNode) -> SerializedDepNodeIndex {
+    pub(crate) fn node_to_index(&self, dep_node: &DepNode) -> SerializedDepNodeIndex {
         self.index[dep_node]
     }
 
     #[inline]
-    pub fn fingerprint_of(&self, dep_node: &DepNode) -> Option<Fingerprint> {
+    pub(crate) fn fingerprint_of(&self, dep_node: &DepNode) -> Option<Fingerprint> {
         self.index
             .get(dep_node)
             .map(|&node_index| self.data.nodes[node_index].1)
     }
 
     #[inline]
-    pub fn fingerprint_by_index(&self,
+    pub(crate) fn fingerprint_by_index(&self,
                                 dep_node_index: SerializedDepNodeIndex)
                                 -> Fingerprint {
         self.data.nodes[dep_node_index].1
     }
 
-    pub fn node_count(&self) -> usize {
+    pub(crate) fn node_count(&self) -> usize {
         self.index.len()
     }
 }

@@ -15,7 +15,7 @@ use ty::{DefId, Substs};
 use ty::{AdtKind, Visibility};
 use ty::TypeVariants::*;
 
-pub use self::def_id_forest::DefIdForest;
+pub(crate) use self::def_id_forest::DefIdForest;
 
 mod def_id_forest;
 
@@ -26,15 +26,15 @@ mod def_id_forest;
 // ```rust
 // enum Void {}
 // mod a {
-//     pub mod b {
-//         pub struct SecretlyUninhabited {
+//     pub(crate) mod b {
+//         pub(crate) struct SecretlyUninhabited {
 //             _priv: !,
 //         }
 //     }
 // }
 //
 // mod c {
-//     pub struct AlsoSecretlyUninhabited {
+//     pub(crate) struct AlsoSecretlyUninhabited {
 //         _priv: Void,
 //     }
 //     mod d {
@@ -68,15 +68,15 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// ```rust
     /// enum Void {}
     /// mod a {
-    ///     pub mod b {
-    ///         pub struct SecretlyUninhabited {
+    ///     pub(crate) mod b {
+    ///         pub(crate) struct SecretlyUninhabited {
     ///             _priv: !,
     ///         }
     ///     }
     /// }
     ///
     /// mod c {
-    ///     pub struct AlsoSecretlyUninhabited {
+    ///     pub(crate) struct AlsoSecretlyUninhabited {
     ///         _priv: Void,
     ///     }
     ///     mod d {
@@ -99,7 +99,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// ```
     /// This code should only compile in modules where the uninhabitedness of Foo is
     /// visible.
-    pub fn is_ty_uninhabited_from(self, module: DefId, ty: Ty<'tcx>) -> bool {
+    pub(crate) fn is_ty_uninhabited_from(self, module: DefId, ty: Ty<'tcx>) -> bool {
         // To check whether this type is uninhabited at all (not just from the
         // given node) you could check whether the forest is empty.
         // ```
@@ -108,7 +108,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         self.ty_inhabitedness_forest(ty).contains(self, module)
     }
 
-    pub fn is_ty_uninhabited_from_all_modules(self, ty: Ty<'tcx>) -> bool {
+    pub(crate) fn is_ty_uninhabited_from_all_modules(self, ty: Ty<'tcx>) -> bool {
         !self.ty_inhabitedness_forest(ty).is_empty()
     }
 
@@ -116,7 +116,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         ty.uninhabited_from(&mut FxHashMap(), self)
     }
 
-    pub fn is_enum_variant_uninhabited_from(self,
+    pub(crate) fn is_enum_variant_uninhabited_from(self,
                                             module: DefId,
                                             variant: &'tcx VariantDef,
                                             substs: &'tcx Substs<'tcx>)
@@ -125,7 +125,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         self.variant_inhabitedness_forest(variant, substs).contains(self, module)
     }
 
-    pub fn is_variant_uninhabited_from_all_modules(self,
+    pub(crate) fn is_variant_uninhabited_from_all_modules(self,
                                                    variant: &'tcx VariantDef,
                                                    substs: &'tcx Substs<'tcx>)
                                                    -> bool

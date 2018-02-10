@@ -18,16 +18,16 @@ use rustc_data_structures::accumulate_vec::IntoIter as AccIntoIter;
 
 // The TypeWalker's stack is hot enough that it's worth going to some effort to
 // avoid heap allocations.
-pub type TypeWalkerArray<'tcx> = [Ty<'tcx>; 8];
-pub type TypeWalkerStack<'tcx> = SmallVec<TypeWalkerArray<'tcx>>;
+pub(crate) type TypeWalkerArray<'tcx> = [Ty<'tcx>; 8];
+pub(crate) type TypeWalkerStack<'tcx> = SmallVec<TypeWalkerArray<'tcx>>;
 
-pub struct TypeWalker<'tcx> {
+pub(crate) struct TypeWalker<'tcx> {
     stack: TypeWalkerStack<'tcx>,
     last_subtree: usize,
 }
 
 impl<'tcx> TypeWalker<'tcx> {
-    pub fn new(ty: Ty<'tcx>) -> TypeWalker<'tcx> {
+    pub(crate) fn new(ty: Ty<'tcx>) -> TypeWalker<'tcx> {
         TypeWalker { stack: SmallVec::one(ty), last_subtree: 1, }
     }
 
@@ -43,7 +43,7 @@ impl<'tcx> TypeWalker<'tcx> {
     /// iter.skip_current_subtree(); // skips int
     /// iter.next(); // yields usize
     /// ```
-    pub fn skip_current_subtree(&mut self) {
+    pub(crate) fn skip_current_subtree(&mut self) {
         self.stack.truncate(self.last_subtree);
     }
 }
@@ -67,7 +67,7 @@ impl<'tcx> Iterator for TypeWalker<'tcx> {
     }
 }
 
-pub fn walk_shallow<'tcx>(ty: Ty<'tcx>) -> AccIntoIter<TypeWalkerArray<'tcx>> {
+pub(crate) fn walk_shallow<'tcx>(ty: Ty<'tcx>) -> AccIntoIter<TypeWalkerArray<'tcx>> {
     let mut stack = SmallVec::new();
     push_subtypes(&mut stack, ty);
     stack.into_iter()

@@ -16,8 +16,8 @@ use rustc_data_structures::stable_hasher::{HashStable, StableHasher,
                                            StableHasherResult};
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
-pub struct BorrowCheckResult {
-    pub used_mut_nodes: FxHashSet<HirId>,
+pub(crate) struct BorrowCheckResult {
+    pub(crate) used_mut_nodes: FxHashSet<HirId>,
 }
 
 impl<'gcx> HashStable<StableHashingContext<'gcx>> for BorrowCheckResult {

@@ -12,9 +12,9 @@
 //! command line options.
 
 pub use self::EntryFnType::*;
-pub use self::CrateType::*;
-pub use self::Passes::*;
-pub use self::DebugInfoLevel::*;
+pub(crate) use self::CrateType::*;
+pub(crate) use self::Passes::*;
+pub(crate) use self::DebugInfoLevel::*;
 
 use session::{early_error, early_warn, Session};
 use session::search_paths::SearchPaths;
@@ -48,14 +48,14 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::path::PathBuf;
 
-pub struct Config {
-    pub target: Target,
-    pub isize_ty: IntTy,
-    pub usize_ty: UintTy,
+pub(crate) struct Config {
+    pub(crate) target: Target,
+    pub(crate) isize_ty: IntTy,
+    pub(crate) usize_ty: UintTy,
 }
 
 #[derive(Clone, Hash, Debug)]
-pub enum Sanitizer {
+pub(crate) enum Sanitizer {
     Address,
     Leak,
     Memory,
@@ -63,7 +63,7 @@ pub enum Sanitizer {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash)]
-pub enum OptLevel {
+pub(crate) enum OptLevel {
     No, // -O0
     Less, // -O1
     Default, // -O2
@@ -73,7 +73,7 @@ pub enum OptLevel {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash)]
-pub enum Lto {
+pub(crate) enum Lto {
     /// Don't do any LTO whatsoever
     No,
 
@@ -93,7 +93,7 @@ pub enum Lto {
 }
 
 #[derive(Clone, Copy, PartialEq, Hash)]
-pub enum DebugInfoLevel {
+pub(crate) enum DebugInfoLevel {
     NoDebugInfo,
     LimitedDebugInfo,
     FullDebugInfo,
@@ -101,7 +101,7 @@ pub enum DebugInfoLevel {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord,
          RustcEncodable, RustcDecodable)]
-pub enum OutputType {
+pub(crate) enum OutputType {
     Bitcode,
     Assembly,
     LlvmAssembly,
@@ -115,7 +115,7 @@ pub enum OutputType {
 /// The epoch of the compiler (RFC 2052)
 #[derive(Clone, Copy, Hash, PartialOrd, Ord, Eq, PartialEq)]
 #[non_exhaustive]
-pub enum Epoch {
+pub(crate) enum Epoch {
     // epochs must be kept in order, newest to oldest
 
     /// The 2015 epoch
@@ -211,7 +211,7 @@ impl OutputType {
         )
     }
 
-    pub fn extension(&self) -> &'static str {
+    pub(crate) fn extension(&self) -> &'static str {
         match *self {
             OutputType::Bitcode => "bc",
             OutputType::Assembly => "s",
@@ -226,7 +226,7 @@ impl OutputType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ErrorOutputType {
+pub(crate) enum ErrorOutputType {
     HumanReadable(ColorConfig),
     Json(bool),
     Short(ColorConfig),
@@ -242,36 +242,36 @@ impl Default for ErrorOutputType {
 // DO NOT switch BTreeMap out for an unsorted container type! That would break
 // dependency tracking for commandline arguments.
 #[derive(Clone, Hash)]
-pub struct OutputTypes(BTreeMap<OutputType, Option<PathBuf>>);
+pub(crate) struct OutputTypes(BTreeMap<OutputType, Option<PathBuf>>);
 
 impl_stable_hash_for!(tuple_struct self::OutputTypes {
     map
 });
 
 impl OutputTypes {
-    pub fn new(entries: &[(OutputType, Option<PathBuf>)]) -> OutputTypes {
+    pub(crate) fn new(entries: &[(OutputType, Option<PathBuf>)]) -> OutputTypes {
         OutputTypes(BTreeMap::from_iter(entries.iter()
                                                .map(|&(k, ref v)| (k, v.clone()))))
     }
 
-    pub fn get(&self, key: &OutputType) -> Option<&Option<PathBuf>> {
+    pub(crate) fn get(&self, key: &OutputType) -> Option<&Option<PathBuf>> {
         self.0.get(key)
     }
 
-    pub fn contains_key(&self, key: &OutputType) -> bool {
+    pub(crate) fn contains_key(&self, key: &OutputType) -> bool {
         self.0.contains_key(key)
     }
 
-    pub fn keys<'a>(&'a self) -> BTreeMapKeysIter<'a, OutputType, Option<PathBuf>> {
+    pub(crate) fn keys<'a>(&'a self) -> BTreeMapKeysIter<'a, OutputType, Option<PathBuf>> {
         self.0.keys()
     }
 
-    pub fn values<'a>(&'a self) -> BTreeMapValuesIter<'a, OutputType, Option<PathBuf>> {
+    pub(crate) fn values<'a>(&'a self) -> BTreeMapValuesIter<'a, OutputType, Option<PathBuf>> {
         self.0.values()
     }
 
     // True if any of the output types require codegen or linking.
-    pub fn should_trans(&self) -> bool {
+    pub(crate) fn should_trans(&self) -> bool {
         self.0.keys().any(|k| match *k {
             OutputType::Bitcode |
             OutputType::Assembly |
@@ -290,18 +290,18 @@ impl OutputTypes {
 // DO NOT switch BTreeMap or BTreeSet out for an unsorted container type! That
 // would break dependency tracking for commandline arguments.
 #[derive(Clone, Hash)]
-pub struct Externs(BTreeMap<String, BTreeSet<String>>);
+pub(crate) struct Externs(BTreeMap<String, BTreeSet<String>>);
 
 impl Externs {
-    pub fn new(data: BTreeMap<String, BTreeSet<String>>) -> Externs {
+    pub(crate) fn new(data: BTreeMap<String, BTreeSet<String>>) -> Externs {
         Externs(data)
     }
 
-    pub fn get(&self, key: &str) -> Option<&BTreeSet<String>> {
+    pub(crate) fn get(&self, key: &str) -> Option<&BTreeSet<String>> {
         self.0.get(key)
     }
 
-    pub fn iter<'a>(&'a self) -> BTreeMapIter<'a, String, BTreeSet<String>> {
+    pub(crate) fn iter<'a>(&'a self) -> BTreeMapIter<'a, String, BTreeSet<String>> {
         self.0.iter()
     }
 }
@@ -325,16 +325,16 @@ macro_rules! hash_option {
 }
 
 macro_rules! top_level_options {
-    (pub struct Options { $(
+    (pub(crate) struct Options { $(
         $opt:ident : $t:ty [$dep_tracking_marker:ident $($warn_val:expr, $warn_text:expr)*],
     )* } ) => (
         #[derive(Clone)]
-        pub struct Options {
-            $(pub $opt: $t),*
+        pub(crate) struct Options {
+            $(pub(crate) $opt: $t),*
         }
 
         impl Options {
-            pub fn dep_tracking_hash(&self) -> u64 {
+            pub(crate) fn dep_tracking_hash(&self) -> u64 {
                 let mut sub_hashes = BTreeMap::new();
                 $({
                     hash_option!($opt,
@@ -376,7 +376,7 @@ macro_rules! top_level_options {
 // doubt, specify [TRACKED], which is always "correct" but might lead to
 // unnecessary re-compilation.
 top_level_options!(
-    pub struct Options {
+    pub(crate) struct Options {
         // The crate config requested for the session, which may be combined
         // with additional crate configurations during the compile process
         crate_types: Vec<CrateType> [TRACKED],
@@ -439,7 +439,7 @@ top_level_options!(
 );
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum PrintRequest {
+pub(crate) enum PrintRequest {
     FileNames,
     Sysroot,
     CrateName,
@@ -455,7 +455,7 @@ pub enum PrintRequest {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum BorrowckMode {
+pub(crate) enum BorrowckMode {
     Ast,
     Mir,
     Compare,
@@ -463,7 +463,7 @@ pub enum BorrowckMode {
 
 impl BorrowckMode {
     /// Should we emit the AST-based borrow checker errors?
-    pub fn use_ast(self) -> bool {
+    pub(crate) fn use_ast(self) -> bool {
         match self {
             BorrowckMode::Ast => true,
             BorrowckMode::Compare => true,
@@ -471,7 +471,7 @@ impl BorrowckMode {
         }
     }
     /// Should we emit the MIR-based borrow checker errors?
-    pub fn use_mir(self) -> bool {
+    pub(crate) fn use_mir(self) -> bool {
         match self {
             BorrowckMode::Ast => false,
             BorrowckMode::Compare => true,
@@ -480,7 +480,7 @@ impl BorrowckMode {
     }
 }
 
-pub enum Input {
+pub(crate) enum Input {
     /// Load source from file
     File(PathBuf),
     Str {
@@ -492,7 +492,7 @@ pub enum Input {
 }
 
 impl Input {
-    pub fn filestem(&self) -> String {
+    pub(crate) fn filestem(&self) -> String {
         match *self {
             Input::File(ref ifile) => ifile.file_stem().unwrap()
                                            .to_str().unwrap().to_string(),
@@ -502,12 +502,12 @@ impl Input {
 }
 
 #[derive(Clone)]
-pub struct OutputFilenames {
-    pub out_directory: PathBuf,
-    pub out_filestem: String,
-    pub single_output_file: Option<PathBuf>,
-    pub extra: String,
-    pub outputs: OutputTypes,
+pub(crate) struct OutputFilenames {
+    pub(crate) out_directory: PathBuf,
+    pub(crate) out_filestem: String,
+    pub(crate) single_output_file: Option<PathBuf>,
+    pub(crate) extra: String,
+    pub(crate) outputs: OutputTypes,
 }
 
 impl_stable_hash_for!(struct self::OutputFilenames {
@@ -518,10 +518,10 @@ impl_stable_hash_for!(struct self::OutputFilenames {
     outputs
 });
 
-pub const RUST_CGU_EXT: &str = "rcgu";
+pub(crate) const RUST_CGU_EXT: &str = "rcgu";
 
 impl OutputFilenames {
-    pub fn path(&self, flavor: OutputType) -> PathBuf {
+    pub(crate) fn path(&self, flavor: OutputType) -> PathBuf {
         self.outputs.get(&flavor).and_then(|p| p.to_owned())
             .or_else(|| self.single_output_file.clone())
             .unwrap_or_else(|| self.temp_path(flavor, None))
@@ -530,7 +530,7 @@ impl OutputFilenames {
     /// Get the path where a compilation artifact of the given type for the
     /// given codegen unit should be placed on disk. If codegen_unit_name is
     /// None, a path distinct from those of any codegen unit will be generated.
-    pub fn temp_path(&self,
+    pub(crate) fn temp_path(&self,
                      flavor: OutputType,
                      codegen_unit_name: Option<&str>)
                      -> PathBuf {
@@ -540,7 +540,7 @@ impl OutputFilenames {
 
     /// Like temp_path, but also supports things where there is no corresponding
     /// OutputType, like no-opt-bitcode or lto-bitcode.
-    pub fn temp_path_ext(&self,
+    pub(crate) fn temp_path_ext(&self,
                          ext: &str,
                          codegen_unit_name: Option<&str>)
                          -> PathBuf {
@@ -566,11 +566,11 @@ impl OutputFilenames {
         path
     }
 
-    pub fn with_extension(&self, extension: &str) -> PathBuf {
+    pub(crate) fn with_extension(&self, extension: &str) -> PathBuf {
         self.out_directory.join(&self.filestem()).with_extension(extension)
     }
 
-    pub fn filestem(&self) -> String {
+    pub(crate) fn filestem(&self) -> String {
         format!("{}{}", self.out_filestem, self.extra)
     }
 }
@@ -589,7 +589,7 @@ pub fn host_triple() -> &'static str {
 }
 
 /// Some reasonable defaults
-pub fn basic_options() -> Options {
+pub(crate) fn basic_options() -> Options {
     Options {
         crate_types: Vec::new(),
         optimize: OptLevel::No,
@@ -622,19 +622,19 @@ pub fn basic_options() -> Options {
 
 impl Options {
     /// True if there is a reason to build the dep graph.
-    pub fn build_dep_graph(&self) -> bool {
+    pub(crate) fn build_dep_graph(&self) -> bool {
         self.incremental.is_some() ||
             self.debugging_opts.dump_dep_graph ||
             self.debugging_opts.query_dep_graph
     }
 
     #[inline(always)]
-    pub fn enable_dep_node_debug_strs(&self) -> bool {
+    pub(crate) fn enable_dep_node_debug_strs(&self) -> bool {
         cfg!(debug_assertions) &&
             (self.debugging_opts.query_dep_graph || self.debugging_opts.incremental_info)
     }
 
-    pub fn file_path_mapping(&self) -> FilePathMapping {
+    pub(crate) fn file_path_mapping(&self) -> FilePathMapping {
         FilePathMapping::new(
             self.debugging_opts.remap_path_prefix_from.iter().zip(
                 self.debugging_opts.remap_path_prefix_to.iter()
@@ -643,7 +643,7 @@ impl Options {
     }
 
     /// True if there will be an output file generated
-    pub fn will_create_output_file(&self) -> bool {
+    pub(crate) fn will_create_output_file(&self) -> bool {
         !self.debugging_opts.parse_only && // The file is just being parsed
             !self.debugging_opts.ls // The file is just being queried
     }
@@ -661,7 +661,7 @@ pub enum EntryFnType {
 }
 
 #[derive(Copy, PartialEq, PartialOrd, Clone, Ord, Eq, Hash, Debug)]
-pub enum CrateType {
+pub(crate) enum CrateType {
     CrateTypeExecutable,
     CrateTypeDylib,
     CrateTypeRlib,
@@ -671,13 +671,13 @@ pub enum CrateType {
 }
 
 #[derive(Clone, Hash)]
-pub enum Passes {
+pub(crate) enum Passes {
     SomePasses(Vec<String>),
     AllPasses,
 }
 
 impl Passes {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         match *self {
             SomePasses(ref v) => v.is_empty(),
             AllPasses => false,
@@ -707,13 +707,13 @@ macro_rules! options {
      ),* ,) =>
 (
     #[derive(Clone)]
-    pub struct $struct_name { $(pub $opt: $t),* }
+    pub(crate) struct $struct_name { $(pub(crate) $opt: $t),* }
 
-    pub fn $defaultfn() -> $struct_name {
+    pub(crate) fn $defaultfn() -> $struct_name {
         $struct_name { $($opt: $init),* }
     }
 
-    pub fn $buildfn(matches: &getopts::Matches, error_format: ErrorOutputType) -> $struct_name
+    pub(crate) fn $buildfn(matches: &getopts::Matches, error_format: ErrorOutputType) -> $struct_name
     {
         let mut op = $defaultfn();
         for option in matches.opt_strs($prefix) {
@@ -772,43 +772,43 @@ macro_rules! options {
         }
     }
 
-    pub type $setter_name = fn(&mut $struct_name, v: Option<&str>) -> bool;
-    pub const $stat: &'static [(&'static str, $setter_name,
+    pub(crate) type $setter_name = fn(&mut $struct_name, v: Option<&str>) -> bool;
+    pub(crate) const $stat: &'static [(&'static str, $setter_name,
                                      Option<&'static str>, &'static str)] =
         &[ $( (stringify!($opt), $mod_set::$opt, $mod_desc::$parse, $desc) ),* ];
 
     #[allow(non_upper_case_globals, dead_code)]
     mod $mod_desc {
-        pub const parse_bool: Option<&'static str> = None;
-        pub const parse_opt_bool: Option<&'static str> =
+        pub(crate) const parse_bool: Option<&'static str> = None;
+        pub(crate) const parse_opt_bool: Option<&'static str> =
             Some("one of: `y`, `yes`, `on`, `n`, `no`, or `off`");
-        pub const parse_string: Option<&'static str> = Some("a string");
-        pub const parse_string_push: Option<&'static str> = Some("a string");
-        pub const parse_pathbuf_push: Option<&'static str> = Some("a path");
-        pub const parse_opt_string: Option<&'static str> = Some("a string");
-        pub const parse_opt_pathbuf: Option<&'static str> = Some("a path");
-        pub const parse_list: Option<&'static str> = Some("a space-separated list of strings");
-        pub const parse_opt_list: Option<&'static str> = Some("a space-separated list of strings");
-        pub const parse_uint: Option<&'static str> = Some("a number");
-        pub const parse_passes: Option<&'static str> =
+        pub(crate) const parse_string: Option<&'static str> = Some("a string");
+        pub(crate) const parse_string_push: Option<&'static str> = Some("a string");
+        pub(crate) const parse_pathbuf_push: Option<&'static str> = Some("a path");
+        pub(crate) const parse_opt_string: Option<&'static str> = Some("a string");
+        pub(crate) const parse_opt_pathbuf: Option<&'static str> = Some("a path");
+        pub(crate) const parse_list: Option<&'static str> = Some("a space-separated list of strings");
+        pub(crate) const parse_opt_list: Option<&'static str> = Some("a space-separated list of strings");
+        pub(crate) const parse_uint: Option<&'static str> = Some("a number");
+        pub(crate) const parse_passes: Option<&'static str> =
             Some("a space-separated list of passes, or `all`");
-        pub const parse_opt_uint: Option<&'static str> =
+        pub(crate) const parse_opt_uint: Option<&'static str> =
             Some("a number");
-        pub const parse_panic_strategy: Option<&'static str> =
+        pub(crate) const parse_panic_strategy: Option<&'static str> =
             Some("either `panic` or `abort`");
-        pub const parse_relro_level: Option<&'static str> =
+        pub(crate) const parse_relro_level: Option<&'static str> =
             Some("one of: `full`, `partial`, or `off`");
-        pub const parse_sanitizer: Option<&'static str> =
+        pub(crate) const parse_sanitizer: Option<&'static str> =
             Some("one of: `address`, `leak`, `memory` or `thread`");
-        pub const parse_linker_flavor: Option<&'static str> =
+        pub(crate) const parse_linker_flavor: Option<&'static str> =
             Some(::rustc_back::LinkerFlavor::one_of());
-        pub const parse_optimization_fuel: Option<&'static str> =
+        pub(crate) const parse_optimization_fuel: Option<&'static str> =
             Some("crate=integer");
-        pub const parse_unpretty: Option<&'static str> =
+        pub(crate) const parse_unpretty: Option<&'static str> =
             Some("`string` or `string=string`");
-        pub const parse_lto: Option<&'static str> =
+        pub(crate) const parse_lto: Option<&'static str> =
             Some("one of `thin`, `fat`, or omitted");
-        pub const parse_epoch: Option<&'static str> =
+        pub(crate) const parse_epoch: Option<&'static str> =
             Some("one of: `2015`, `2018`");
     }
 
@@ -819,7 +819,7 @@ macro_rules! options {
         use std::path::PathBuf;
 
         $(
-            pub fn $opt(cg: &mut $struct_name, v: Option<&str>) -> bool {
+            pub(crate) fn $opt(cg: &mut $struct_name, v: Option<&str>) -> bool {
                 $parse(&mut cg.$opt, v)
             }
         )*
@@ -1322,11 +1322,11 @@ options! {DebuggingOptions, DebuggingSetter, basic_debugging_options,
          epoch). Crates compiled with different epochs can be linked together."),
 }
 
-pub fn default_lib_output() -> CrateType {
+pub(crate) fn default_lib_output() -> CrateType {
     CrateTypeRlib
 }
 
-pub fn default_configuration(sess: &Session) -> ast::CrateConfig {
+pub(crate) fn default_configuration(sess: &Session) -> ast::CrateConfig {
     let end = &sess.target.target.target_endian;
     let arch = &sess.target.target.arch;
     let wordsz = &sess.target.target.target_pointer_width;
@@ -1371,7 +1371,7 @@ pub fn default_configuration(sess: &Session) -> ast::CrateConfig {
     return ret;
 }
 
-pub fn build_configuration(sess: &Session,
+pub(crate) fn build_configuration(sess: &Session,
                            mut user_cfg: ast::CrateConfig)
                            -> ast::CrateConfig {
     // Combine the configuration requested by the session (command line) with
@@ -1385,7 +1385,7 @@ pub fn build_configuration(sess: &Session,
     user_cfg
 }
 
-pub fn build_target_config(opts: &Options, sp: &Handler) -> Config {
+pub(crate) fn build_target_config(opts: &Options, sp: &Handler) -> Config {
     let target = match Target::search(&opts.target_triple) {
         Ok(t) => t,
         Err(e) => {
@@ -1412,24 +1412,24 @@ pub fn build_target_config(opts: &Options, sp: &Handler) -> Config {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum OptionStability {
+pub(crate) enum OptionStability {
     Stable,
 
     Unstable,
 }
 
-pub struct RustcOptGroup {
-    pub apply: Box<Fn(&mut getopts::Options) -> &mut getopts::Options>,
-    pub name: &'static str,
-    pub stability: OptionStability,
+pub(crate) struct RustcOptGroup {
+    pub(crate) apply: Box<Fn(&mut getopts::Options) -> &mut getopts::Options>,
+    pub(crate) name: &'static str,
+    pub(crate) stability: OptionStability,
 }
 
 impl RustcOptGroup {
-    pub fn is_stable(&self) -> bool {
+    pub(crate) fn is_stable(&self) -> bool {
         self.stability == OptionStability::Stable
     }
 
-    pub fn stable<F>(name: &'static str, f: F) -> RustcOptGroup
+    pub(crate) fn stable<F>(name: &'static str, f: F) -> RustcOptGroup
         where F: Fn(&mut getopts::Options) -> &mut getopts::Options + 'static,
     {
         RustcOptGroup {
@@ -1439,7 +1439,7 @@ impl RustcOptGroup {
         }
     }
 
-    pub fn unstable<F>(name: &'static str, f: F) -> RustcOptGroup
+    pub(crate) fn unstable<F>(name: &'static str, f: F) -> RustcOptGroup
         where F: Fn(&mut getopts::Options) -> &mut getopts::Options + 'static,
     {
         RustcOptGroup {
@@ -1464,8 +1464,8 @@ mod opt {
     use getopts;
     use super::RustcOptGroup;
 
-    pub type R = RustcOptGroup;
-    pub type S = &'static str;
+    pub(crate) type R = RustcOptGroup;
+    pub(crate) type S = &'static str;
 
     fn stable<F>(name: S, f: F) -> R
         where F: Fn(&mut getopts::Options) -> &mut getopts::Options + 'static
@@ -1487,35 +1487,35 @@ mod opt {
         }
     }
 
-    pub fn opt_s(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn opt_s(a: S, b: S, c: S, d: S) -> R {
         stable(longer(a, b), move |opts| opts.optopt(a, b, c, d))
     }
-    pub fn multi_s(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn multi_s(a: S, b: S, c: S, d: S) -> R {
         stable(longer(a, b), move |opts| opts.optmulti(a, b, c, d))
     }
-    pub fn flag_s(a: S, b: S, c: S) -> R {
+    pub(crate) fn flag_s(a: S, b: S, c: S) -> R {
         stable(longer(a, b), move |opts| opts.optflag(a, b, c))
     }
-    pub fn flagopt_s(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn flagopt_s(a: S, b: S, c: S, d: S) -> R {
         stable(longer(a, b), move |opts| opts.optflagopt(a, b, c, d))
     }
-    pub fn flagmulti_s(a: S, b: S, c: S) -> R {
+    pub(crate) fn flagmulti_s(a: S, b: S, c: S) -> R {
         stable(longer(a, b), move |opts| opts.optflagmulti(a, b, c))
     }
 
-    pub fn opt(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn opt(a: S, b: S, c: S, d: S) -> R {
         unstable(longer(a, b), move |opts| opts.optopt(a, b, c, d))
     }
-    pub fn multi(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn multi(a: S, b: S, c: S, d: S) -> R {
         unstable(longer(a, b), move |opts| opts.optmulti(a, b, c, d))
     }
-    pub fn flag(a: S, b: S, c: S) -> R {
+    pub(crate) fn flag(a: S, b: S, c: S) -> R {
         unstable(longer(a, b), move |opts| opts.optflag(a, b, c))
     }
-    pub fn flagopt(a: S, b: S, c: S, d: S) -> R {
+    pub(crate) fn flagopt(a: S, b: S, c: S, d: S) -> R {
         unstable(longer(a, b), move |opts| opts.optflagopt(a, b, c, d))
     }
-    pub fn flagmulti(a: S, b: S, c: S) -> R {
+    pub(crate) fn flagmulti(a: S, b: S, c: S) -> R {
         unstable(longer(a, b), move |opts| opts.optflagmulti(a, b, c))
     }
 }
@@ -1523,7 +1523,7 @@ mod opt {
 /// Returns the "short" subset of the rustc command line options,
 /// including metadata for each option, such as whether the option is
 /// part of the stable long-term interface for rustc.
-pub fn rustc_short_optgroups() -> Vec<RustcOptGroup> {
+pub(crate) fn rustc_short_optgroups() -> Vec<RustcOptGroup> {
     vec![
         opt::flag_s("h", "help", "Display this message"),
         opt::multi_s("", "cfg", "Configure the compilation environment", "SPEC"),
@@ -1572,7 +1572,7 @@ pub fn rustc_short_optgroups() -> Vec<RustcOptGroup> {
 /// Returns all rustc command line options, including metadata for
 /// each option, such as whether the option is part of the stable
 /// long-term interface for rustc.
-pub fn rustc_optgroups() -> Vec<RustcOptGroup> {
+pub(crate) fn rustc_optgroups() -> Vec<RustcOptGroup> {
     let mut opts = rustc_short_optgroups();
     opts.extend(vec![
         opt::multi_s("", "extern", "Specify where an external rust library is located",
@@ -1598,7 +1598,7 @@ pub fn rustc_optgroups() -> Vec<RustcOptGroup> {
 }
 
 // Convert strings provided as --cfg [cfgspec] into a crate_cfg
-pub fn parse_cfgspecs(cfgspecs: Vec<String> ) -> ast::CrateConfig {
+pub(crate) fn parse_cfgspecs(cfgspecs: Vec<String> ) -> ast::CrateConfig {
     cfgspecs.into_iter().map(|s| {
         let sess = parse::ParseSess::new(FilePathMapping::empty());
         let mut parser =
@@ -1618,7 +1618,7 @@ pub fn parse_cfgspecs(cfgspecs: Vec<String> ) -> ast::CrateConfig {
     }).collect::<ast::CrateConfig>()
 }
 
-pub fn build_session_options_and_crate_config(matches: &getopts::Matches)
+pub(crate) fn build_session_options_and_crate_config(matches: &getopts::Matches)
                                               -> (Options, ast::CrateConfig) {
     let color = match matches.opt_str("color").as_ref().map(|s| &s[..]) {
         Some("auto")   => ColorConfig::Auto,
@@ -1997,7 +1997,7 @@ pub fn build_session_options_and_crate_config(matches: &getopts::Matches)
     cfg)
 }
 
-pub fn parse_crate_types_from_list(list_list: Vec<String>)
+pub(crate) fn parse_crate_types_from_list(list_list: Vec<String>)
                                    -> Result<Vec<CrateType>, String> {
     let mut crate_types: Vec<CrateType> = Vec::new();
     for unparsed_crate_type in &list_list {
@@ -2024,21 +2024,21 @@ pub fn parse_crate_types_from_list(list_list: Vec<String>)
     Ok(crate_types)
 }
 
-pub mod nightly_options {
+pub(crate) mod nightly_options {
     use getopts;
     use syntax::feature_gate::UnstableFeatures;
     use super::{ErrorOutputType, OptionStability, RustcOptGroup};
     use session::early_error;
 
-    pub fn is_unstable_enabled(matches: &getopts::Matches) -> bool {
+    pub(crate) fn is_unstable_enabled(matches: &getopts::Matches) -> bool {
         is_nightly_build() && matches.opt_strs("Z").iter().any(|x| *x == "unstable-options")
     }
 
-    pub fn is_nightly_build() -> bool {
+    pub(crate) fn is_nightly_build() -> bool {
         UnstableFeatures::from_environment().is_nightly_build()
     }
 
-    pub fn check_nightly_options(matches: &getopts::Matches, flags: &[RustcOptGroup]) {
+    pub(crate) fn check_nightly_options(matches: &getopts::Matches, flags: &[RustcOptGroup]) {
         let has_z_unstable_option = matches.opt_strs("Z").iter().any(|x| *x == "unstable-options");
         let really_allows_unstable_options = UnstableFeatures::from_environment()
             .is_nightly_build();
@@ -2115,7 +2115,7 @@ mod dep_tracking {
     use syntax::feature_gate::UnstableFeatures;
     use rustc_back::{PanicStrategy, RelroLevel};
 
-    pub trait DepTrackingHash {
+    pub(crate) trait DepTrackingHash {
         fn hash(&self, hasher: &mut DefaultHasher, error_format: ErrorOutputType);
     }
 
@@ -2220,7 +2220,7 @@ mod dep_tracking {
     }
 
     // This is a stable hash because BTreeMap is a sorted container
-    pub fn stable_hash(sub_hashes: BTreeMap<&'static str, &DepTrackingHash>,
+    pub(crate) fn stable_hash(sub_hashes: BTreeMap<&'static str, &DepTrackingHash>,
                        hasher: &mut DefaultHasher,
                        error_format: ErrorOutputType) {
         for (key, sub_hash) in sub_hashes {

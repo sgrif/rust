@@ -13,17 +13,17 @@ use std::path::{Path, PathBuf};
 use session::{early_error, config};
 
 #[derive(Clone, Debug)]
-pub struct SearchPaths {
+pub(crate) struct SearchPaths {
     paths: Vec<(PathKind, PathBuf)>,
 }
 
-pub struct Iter<'a> {
+pub(crate) struct Iter<'a> {
     kind: PathKind,
     iter: slice::Iter<'a, (PathKind, PathBuf)>,
 }
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug, PartialOrd, Ord, Hash)]
-pub enum PathKind {
+pub(crate) enum PathKind {
     Native,
     Crate,
     Dependency,
@@ -33,11 +33,11 @@ pub enum PathKind {
 }
 
 impl SearchPaths {
-    pub fn new() -> SearchPaths {
+    pub(crate) fn new() -> SearchPaths {
         SearchPaths { paths: Vec::new() }
     }
 
-    pub fn add_path(&mut self, path: &str, output: config::ErrorOutputType) {
+    pub(crate) fn add_path(&mut self, path: &str, output: config::ErrorOutputType) {
         let (kind, path) = if path.starts_with("native=") {
             (PathKind::Native, &path["native=".len()..])
         } else if path.starts_with("crate=") {
@@ -57,7 +57,7 @@ impl SearchPaths {
         self.paths.push((kind, PathBuf::from(path)));
     }
 
-    pub fn iter(&self, kind: PathKind) -> Iter {
+    pub(crate) fn iter(&self, kind: PathKind) -> Iter {
         Iter { kind: kind, iter: self.paths.iter() }
     }
 }

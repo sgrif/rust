@@ -20,12 +20,12 @@ use ty::fold::{TypeFolder, TypeVisitor};
 /// been unified with (similar to `shallow_resolve`, but deep). This is
 /// useful for printing messages etc but also required at various
 /// points for correctness.
-pub struct OpportunisticTypeResolver<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct OpportunisticTypeResolver<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
 }
 
 impl<'a, 'gcx, 'tcx> OpportunisticTypeResolver<'a, 'gcx, 'tcx> {
-    pub fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
+    pub(crate) fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
         OpportunisticTypeResolver { infcx: infcx }
     }
 }
@@ -48,12 +48,12 @@ impl<'a, 'gcx, 'tcx> TypeFolder<'gcx, 'tcx> for OpportunisticTypeResolver<'a, 'g
 /// The opportunistic type and region resolver is similar to the
 /// opportunistic type resolver, but also opportunistically resolves
 /// regions. It is useful for canonicalization.
-pub struct OpportunisticTypeAndRegionResolver<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct OpportunisticTypeAndRegionResolver<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
 }
 
 impl<'a, 'gcx, 'tcx> OpportunisticTypeAndRegionResolver<'a, 'gcx, 'tcx> {
-    pub fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
+    pub(crate) fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
         OpportunisticTypeAndRegionResolver { infcx: infcx }
     }
 }
@@ -90,12 +90,12 @@ impl<'a, 'gcx, 'tcx> TypeFolder<'gcx, 'tcx> for OpportunisticTypeAndRegionResolv
 /// type variables that don't yet have a value. They get pushed into a
 /// vector. It does not construct the fully resolved type (which might
 /// involve some hashing and so forth).
-pub struct UnresolvedTypeFinder<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct UnresolvedTypeFinder<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
 }
 
 impl<'a, 'gcx, 'tcx> UnresolvedTypeFinder<'a, 'gcx, 'tcx> {
-    pub fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
+    pub(crate) fn new(infcx: &'a InferCtxt<'a, 'gcx, 'tcx>) -> Self {
         UnresolvedTypeFinder { infcx }
     }
 }
@@ -126,7 +126,7 @@ impl<'a, 'gcx, 'tcx> TypeVisitor<'tcx> for UnresolvedTypeFinder<'a, 'gcx, 'tcx> 
 /// Full type resolution replaces all type and region variables with
 /// their concrete results. If any variable cannot be replaced (never unified, etc)
 /// then an `Err` result is returned.
-pub fn fully_resolve<'a, 'gcx, 'tcx, T>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn fully_resolve<'a, 'gcx, 'tcx, T>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                         value: &T) -> FixupResult<T>
     where T : TypeFoldable<'tcx>
 {

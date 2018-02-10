@@ -36,7 +36,7 @@ use util::nodemap::{DefIdMap, FxHashMap};
 ///   parents of a given specializing impl, which is needed for extracting
 ///   default items amongst other things. In the simple "chain" rule, every impl
 ///   has at most one parent.
-pub struct Graph {
+pub(crate) struct Graph {
     // all impls have a parent; the "root" impls have as their parent the def_id
     // of the trait
     parent: DefIdMap<DefId>,
@@ -203,7 +203,7 @@ impl<'a, 'gcx, 'tcx> Children {
 }
 
 impl<'a, 'gcx, 'tcx> Graph {
-    pub fn new() -> Graph {
+    pub(crate) fn new() -> Graph {
         Graph {
             parent: Default::default(),
             children: Default::default(),
@@ -213,7 +213,7 @@ impl<'a, 'gcx, 'tcx> Graph {
     /// Insert a local impl into the specialization graph. If an existing impl
     /// conflicts with it (has overlap, but neither specializes the other),
     /// information about the area of overlap is returned in the `Err`.
-    pub fn insert(&mut self,
+    pub(crate) fn insert(&mut self,
                   tcx: TyCtxt<'a, 'gcx, 'tcx>,
                   impl_def_id: DefId)
                   -> Result<Option<OverlapError>, OverlapError> {
@@ -274,7 +274,7 @@ impl<'a, 'gcx, 'tcx> Graph {
     }
 
     /// Insert cached metadata mapping from a child impl back to its parent.
-    pub fn record_impl_from_cstore(&mut self,
+    pub(crate) fn record_impl_from_cstore(&mut self,
                                    tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                    parent: DefId,
                                    child: DefId) {
@@ -288,7 +288,7 @@ impl<'a, 'gcx, 'tcx> Graph {
 
     /// The parent of a given impl, which is the def id of the trait when the
     /// impl is a "specialization root".
-    pub fn parent(&self, child: DefId) -> DefId {
+    pub(crate) fn parent(&self, child: DefId) -> DefId {
         *self.parent.get(&child).unwrap()
     }
 }
@@ -297,13 +297,13 @@ impl<'a, 'gcx, 'tcx> Graph {
 /// definition; either can serve as a source of item definitions.
 /// There is always exactly one trait definition node: the root.
 #[derive(Debug, Copy, Clone)]
-pub enum Node {
+pub(crate) enum Node {
     Impl(DefId),
     Trait(DefId),
 }
 
 impl<'a, 'gcx, 'tcx> Node {
-    pub fn is_from_trait(&self) -> bool {
+    pub(crate) fn is_from_trait(&self) -> bool {
         match *self {
             Node::Trait(..) => true,
             _ => false,
@@ -312,12 +312,12 @@ impl<'a, 'gcx, 'tcx> Node {
 
     /// Iterate over the items defined directly by the given (impl or trait) node.
     #[inline] // FIXME(#35870) Avoid closures being unexported due to impl Trait.
-    pub fn items(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>)
+    pub(crate) fn items(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>)
                  -> impl Iterator<Item = ty::AssociatedItem> + 'a {
         tcx.associated_items(self.def_id())
     }
 
-    pub fn def_id(&self) -> DefId {
+    pub(crate) fn def_id(&self) -> DefId {
         match *self {
             Node::Impl(did) => did,
             Node::Trait(did) => did,
@@ -325,7 +325,7 @@ impl<'a, 'gcx, 'tcx> Node {
     }
 }
 
-pub struct Ancestors {
+pub(crate) struct Ancestors {
     trait_def_id: DefId,
     specialization_graph: Rc<Graph>,
     current_source: Option<Node>,
@@ -347,13 +347,13 @@ impl Iterator for Ancestors {
     }
 }
 
-pub struct NodeItem<T> {
-    pub node: Node,
-    pub item: T,
+pub(crate) struct NodeItem<T> {
+    pub(crate) node: Node,
+    pub(crate) item: T,
 }
 
 impl<T> NodeItem<T> {
-    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> NodeItem<U> {
+    pub(crate) fn map<U, F: FnOnce(T) -> U>(self, f: F) -> NodeItem<U> {
         NodeItem {
             node: self.node,
             item: f(self.item),
@@ -365,7 +365,7 @@ impl<'a, 'gcx, 'tcx> Ancestors {
     /// Search the items from the given ancestors, returning each definition
     /// with the given name and the given kind.
     #[inline] // FIXME(#35870) Avoid closures being unexported due to impl Trait.
-    pub fn defs(self, tcx: TyCtxt<'a, 'gcx, 'tcx>, trait_item_name: Name,
+    pub(crate) fn defs(self, tcx: TyCtxt<'a, 'gcx, 'tcx>, trait_item_name: Name,
                 trait_item_kind: ty::AssociatedKind, trait_def_id: DefId)
                 -> impl Iterator<Item = NodeItem<ty::AssociatedItem>> + 'a {
         self.flat_map(move |node| {
@@ -379,7 +379,7 @@ impl<'a, 'gcx, 'tcx> Ancestors {
 
 /// Walk up the specialization ancestors of a given impl, starting with that
 /// impl itself.
-pub fn ancestors(tcx: TyCtxt,
+pub(crate) fn ancestors(tcx: TyCtxt,
                  trait_def_id: DefId,
                  start_from_impl: DefId)
                  -> Ancestors {

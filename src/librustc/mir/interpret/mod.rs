@@ -8,9 +8,9 @@ macro_rules! err {
 mod error;
 mod value;
 
-pub use self::error::{EvalError, EvalResult, EvalErrorKind};
+pub(crate) use self::error::{EvalError, EvalResult, EvalErrorKind};
 
-pub use self::value::{PrimVal, PrimValKind, Value, Pointer, bytes_to_f32, bytes_to_f64};
+pub(crate) use self::value::{PrimVal, PrimValKind, Value, Pointer, bytes_to_f32, bytes_to_f64};
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -21,7 +21,7 @@ use middle::region;
 use std::iter;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Lock {
+pub(crate) enum Lock {
     NoLock,
     WriteLock(DynamicLifetime),
     /// This should never be empty -- that would be a read lock held and nobody there to release it...
@@ -29,33 +29,33 @@ pub enum Lock {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct DynamicLifetime {
-    pub frame: usize,
-    pub region: Option<region::Scope>, // "None" indicates "until the function ends"
+pub(crate) struct DynamicLifetime {
+    pub(crate) frame: usize,
+    pub(crate) region: Option<region::Scope>, // "None" indicates "until the function ends"
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum AccessKind {
+pub(crate) enum AccessKind {
     Read,
     Write,
 }
 
 /// Uniquely identifies a specific constant or static.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct GlobalId<'tcx> {
+pub(crate) struct GlobalId<'tcx> {
     /// For a constant or static, the `Instance` of the item itself.
     /// For a promoted global, the `Instance` of the function they belong to.
-    pub instance: ty::Instance<'tcx>,
+    pub(crate) instance: ty::Instance<'tcx>,
 
     /// The index for promoted globals within their function's `Mir`.
-    pub promoted: Option<mir::Promoted>,
+    pub(crate) promoted: Option<mir::Promoted>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pointer arithmetic
 ////////////////////////////////////////////////////////////////////////////////
 
-pub trait PointerArithmetic: layout::HasDataLayout {
+pub(crate) trait PointerArithmetic: layout::HasDataLayout {
     // These are not supposed to be overriden.
 
     //// Trunace the given value to the pointer size; also return whether there was an overflow
@@ -102,13 +102,13 @@ impl<T: layout::HasDataLayout> PointerArithmetic for T {}
 
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct MemoryPointer {
-    pub alloc_id: AllocId,
-    pub offset: u64,
+pub(crate) struct MemoryPointer {
+    pub(crate) alloc_id: AllocId,
+    pub(crate) offset: u64,
 }
 
 impl<'tcx> MemoryPointer {
-    pub fn new(alloc_id: AllocId, offset: u64) -> Self {
+    pub(crate) fn new(alloc_id: AllocId, offset: u64) -> Self {
         MemoryPointer { alloc_id, offset }
     }
 
@@ -119,7 +119,7 @@ impl<'tcx> MemoryPointer {
         )
     }
 
-    pub fn overflowing_signed_offset<C: HasDataLayout>(self, i: i128, cx: C) -> (Self, bool) {
+    pub(crate) fn overflowing_signed_offset<C: HasDataLayout>(self, i: i128, cx: C) -> (Self, bool) {
         let (res, over) = cx.data_layout().overflowing_signed_offset(self.offset, i);
         (MemoryPointer::new(self.alloc_id, res), over)
     }
@@ -131,12 +131,12 @@ impl<'tcx> MemoryPointer {
         ))
     }
 
-    pub fn overflowing_offset<C: HasDataLayout>(self, i: u64, cx: C) -> (Self, bool) {
+    pub(crate) fn overflowing_offset<C: HasDataLayout>(self, i: u64, cx: C) -> (Self, bool) {
         let (res, over) = cx.data_layout().overflowing_offset(self.offset, i);
         (MemoryPointer::new(self.alloc_id, res), over)
     }
 
-    pub fn offset<C: HasDataLayout>(self, i: u64, cx: C) -> EvalResult<'tcx, Self> {
+    pub(crate) fn offset<C: HasDataLayout>(self, i: u64, cx: C) -> EvalResult<'tcx, Self> {
         Ok(MemoryPointer::new(
             self.alloc_id,
             cx.data_layout().offset(self.offset, i)?,
@@ -146,7 +146,7 @@ impl<'tcx> MemoryPointer {
 
 
 #[derive(Copy, Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Debug)]
-pub struct AllocId(pub u64);
+pub(crate) struct AllocId(pub(crate) u64);
 
 impl fmt::Display for AllocId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -155,21 +155,21 @@ impl fmt::Display for AllocId {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash)]
-pub struct Allocation {
+pub(crate) struct Allocation {
     /// The actual bytes of the allocation.
     /// Note that the bytes of a pointer represent the offset of the pointer
-    pub bytes: Vec<u8>,
+    pub(crate) bytes: Vec<u8>,
     /// Maps from byte addresses to allocations.
     /// Only the first byte of a pointer is inserted into the map.
-    pub relocations: BTreeMap<u64, AllocId>,
+    pub(crate) relocations: BTreeMap<u64, AllocId>,
     /// Denotes undefined memory. Reading from undefined memory is forbidden in miri
-    pub undef_mask: UndefMask,
+    pub(crate) undef_mask: UndefMask,
     /// The alignment of the allocation to detect unaligned reads.
-    pub align: Align,
+    pub(crate) align: Align,
 }
 
 impl Allocation {
-    pub fn from_bytes(slice: &[u8]) -> Self {
+    pub(crate) fn from_bytes(slice: &[u8]) -> Self {
         let mut undef_mask = UndefMask::new(0);
         undef_mask.grow(slice.len() as u64, true);
         Self {
@@ -189,13 +189,13 @@ type Block = u64;
 const BLOCK_SIZE: u64 = 64;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct UndefMask {
+pub(crate) struct UndefMask {
     blocks: Vec<Block>,
     len: u64,
 }
 
 impl UndefMask {
-    pub fn new(size: u64) -> Self {
+    pub(crate) fn new(size: u64) -> Self {
         let mut m = UndefMask {
             blocks: vec![],
             len: 0,
@@ -205,7 +205,7 @@ impl UndefMask {
     }
 
     /// Check whether the range `start..end` (end-exclusive) is entirely defined.
-    pub fn is_range_defined(&self, start: u64, end: u64) -> bool {
+    pub(crate) fn is_range_defined(&self, start: u64, end: u64) -> bool {
         if end > self.len {
             return false;
         }
@@ -217,7 +217,7 @@ impl UndefMask {
         true
     }
 
-    pub fn set_range(&mut self, start: u64, end: u64, new_state: bool) {
+    pub(crate) fn set_range(&mut self, start: u64, end: u64, new_state: bool) {
         let len = self.len;
         if end > len {
             self.grow(end - len, new_state);
@@ -225,18 +225,18 @@ impl UndefMask {
         self.set_range_inbounds(start, end, new_state);
     }
 
-    pub fn set_range_inbounds(&mut self, start: u64, end: u64, new_state: bool) {
+    pub(crate) fn set_range_inbounds(&mut self, start: u64, end: u64, new_state: bool) {
         for i in start..end {
             self.set(i, new_state);
         }
     }
 
-    pub fn get(&self, i: u64) -> bool {
+    pub(crate) fn get(&self, i: u64) -> bool {
         let (block, bit) = bit_index(i);
         (self.blocks[block] & 1 << bit) != 0
     }
 
-    pub fn set(&mut self, i: u64, new_state: bool) {
+    pub(crate) fn set(&mut self, i: u64, new_state: bool) {
         let (block, bit) = bit_index(i);
         if new_state {
             self.blocks[block] |= 1 << bit;
@@ -245,7 +245,7 @@ impl UndefMask {
         }
     }
 
-    pub fn grow(&mut self, amount: u64, new_state: bool) {
+    pub(crate) fn grow(&mut self, amount: u64, new_state: bool) {
         let unused_trailing_bits = self.blocks.len() as u64 * BLOCK_SIZE - self.len;
         if amount > unused_trailing_bits {
             let additional_blocks = amount / BLOCK_SIZE + 1;

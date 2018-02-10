@@ -35,7 +35,7 @@ mod graphviz;
 /// iteration to find region values which satisfy all constraints,
 /// assuming such values can be found. It returns the final values of
 /// all the variables as well as a set of errors that must be reported.
-pub fn resolve<'tcx>(
+pub(crate) fn resolve<'tcx>(
     region_rels: &RegionRelations<'_, '_, 'tcx>,
     var_origins: VarOrigins,
     data: RegionConstraintData<'tcx>,
@@ -56,7 +56,7 @@ pub fn resolve<'tcx>(
 
 /// Contains the result of lexical region resolution. Offers methods
 /// to lookup up the final value of a region variable.
-pub struct LexicalRegionResolutions<'tcx> {
+pub(crate) struct LexicalRegionResolutions<'tcx> {
     values: IndexVec<RegionVid, VarValue<'tcx>>,
     error_region: ty::Region<'tcx>,
 }
@@ -68,7 +68,7 @@ enum VarValue<'tcx> {
 }
 
 #[derive(Clone, Debug)]
-pub enum RegionResolutionError<'tcx> {
+pub(crate) enum RegionResolutionError<'tcx> {
     /// `ConcreteFailure(o, a, b)`:
     ///
     /// `o` requires that `a <= b`, but this does not hold
@@ -760,7 +760,7 @@ impl<'tcx> LexicalRegionResolutions<'tcx> {
         &mut self.values[rid]
     }
 
-    pub fn resolve_var(&self, rid: RegionVid) -> ty::Region<'tcx> {
+    pub(crate) fn resolve_var(&self, rid: RegionVid) -> ty::Region<'tcx> {
         let result = match self.values[rid] {
             VarValue::Value(r) => r,
             VarValue::ErrorValue => self.error_region,

@@ -81,14 +81,14 @@ impl<'tcx> Kind<'tcx> {
     }
 
     #[inline]
-    pub fn as_type(self) -> Option<Ty<'tcx>> {
+    pub(crate) fn as_type(self) -> Option<Ty<'tcx>> {
         unsafe {
             self.downcast(TYPE_TAG)
         }
     }
 
     #[inline]
-    pub fn as_region(self) -> Option<ty::Region<'tcx>> {
+    pub(crate) fn as_region(self) -> Option<ty::Region<'tcx>> {
         unsafe {
             self.downcast(REGION_TAG)
         }
@@ -179,7 +179,7 @@ pub type Substs<'tcx> = Slice<Kind<'tcx>>;
 
 impl<'a, 'gcx, 'tcx> Substs<'tcx> {
     /// Creates a Substs that maps each generic parameter to itself.
-    pub fn identity_for_item(tcx: TyCtxt<'a, 'gcx, 'tcx>, def_id: DefId)
+    pub(crate) fn identity_for_item(tcx: TyCtxt<'a, 'gcx, 'tcx>, def_id: DefId)
                              -> &'tcx Substs<'tcx> {
         Substs::for_item(tcx, def_id, |def, _| {
             tcx.mk_region(ty::ReEarlyBound(def.to_early_bound_region_data()))
@@ -191,7 +191,7 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
     /// The closures get to observe the Substs as they're
     /// being built, which can be used to correctly
     /// substitute defaults of type parameters.
-    pub fn for_item<FR, FT>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn for_item<FR, FT>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                             def_id: DefId,
                             mut mk_region: FR,
                             mut mk_type: FT)
@@ -204,7 +204,7 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
         tcx.intern_substs(&substs)
     }
 
-    pub fn extend_to<FR, FT>(&self,
+    pub(crate) fn extend_to<FR, FT>(&self,
                              tcx: TyCtxt<'a, 'gcx, 'tcx>,
                              def_id: DefId,
                              mut mk_region: FR,
@@ -220,7 +220,7 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
         tcx.intern_substs(&result)
     }
 
-    pub fn fill_item<FR, FT>(substs: &mut Vec<Kind<'tcx>>,
+    pub(crate) fn fill_item<FR, FT>(substs: &mut Vec<Kind<'tcx>>,
                              tcx: TyCtxt<'a, 'gcx, 'tcx>,
                              defs: &ty::Generics,
                              mk_region: &mut FR,
@@ -263,41 +263,41 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
         }
     }
 
-    pub fn is_noop(&self) -> bool {
+    pub(crate) fn is_noop(&self) -> bool {
         self.is_empty()
     }
 
     #[inline]
-    pub fn types(&'a self) -> impl DoubleEndedIterator<Item=Ty<'tcx>> + 'a {
+    pub(crate) fn types(&'a self) -> impl DoubleEndedIterator<Item=Ty<'tcx>> + 'a {
         self.iter().filter_map(|k| k.as_type())
     }
 
     #[inline]
-    pub fn regions(&'a self) -> impl DoubleEndedIterator<Item=ty::Region<'tcx>> + 'a {
+    pub(crate) fn regions(&'a self) -> impl DoubleEndedIterator<Item=ty::Region<'tcx>> + 'a {
         self.iter().filter_map(|k| k.as_region())
     }
 
     #[inline]
-    pub fn type_at(&self, i: usize) -> Ty<'tcx> {
+    pub(crate) fn type_at(&self, i: usize) -> Ty<'tcx> {
         self[i].as_type().unwrap_or_else(|| {
             bug!("expected type for param #{} in {:?}", i, self);
         })
     }
 
     #[inline]
-    pub fn region_at(&self, i: usize) -> ty::Region<'tcx> {
+    pub(crate) fn region_at(&self, i: usize) -> ty::Region<'tcx> {
         self[i].as_region().unwrap_or_else(|| {
             bug!("expected region for param #{} in {:?}", i, self);
         })
     }
 
     #[inline]
-    pub fn type_for_def(&self, ty_param_def: &ty::TypeParameterDef) -> Ty<'tcx> {
+    pub(crate) fn type_for_def(&self, ty_param_def: &ty::TypeParameterDef) -> Ty<'tcx> {
         self.type_at(ty_param_def.index as usize)
     }
 
     #[inline]
-    pub fn region_for_def(&self, def: &ty::RegionParameterDef) -> ty::Region<'tcx> {
+    pub(crate) fn region_for_def(&self, def: &ty::RegionParameterDef) -> ty::Region<'tcx> {
         self.region_at(def.index as usize)
     }
 
@@ -306,7 +306,7 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
     /// in a different item, with `target_substs` as the base for
     /// the target impl/trait, with the source child-specific
     /// parameters (e.g. method parameters) on top of that base.
-    pub fn rebase_onto(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn rebase_onto(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                        source_ancestor: DefId,
                        target_substs: &Substs<'tcx>)
                        -> &'tcx Substs<'tcx> {
@@ -314,7 +314,7 @@ impl<'a, 'gcx, 'tcx> Substs<'tcx> {
         tcx.mk_substs(target_substs.iter().chain(&self[defs.own_count()..]).cloned())
     }
 
-    pub fn truncate_to(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, generics: &ty::Generics)
+    pub(crate) fn truncate_to(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, generics: &ty::Generics)
                        -> &'tcx Substs<'tcx> {
         tcx.mk_substs(self.iter().take(generics.count()).cloned())
     }
@@ -347,7 +347,7 @@ impl<'tcx> serialize::UseSpecializedDecodable for &'tcx Substs<'tcx> {}
 // `foo`. Or use `foo.subst_spanned(tcx, substs, Some(span))` when
 // there is more information available (for better errors).
 
-pub trait Subst<'tcx> : Sized {
+pub(crate) trait Subst<'tcx> : Sized {
     fn subst<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                       substs: &[Kind<'tcx>]) -> Self {
         self.subst_spanned(tcx, substs, None)
@@ -558,7 +558,7 @@ impl<'a, 'gcx, 'tcx> SubstFolder<'a, 'gcx, 'tcx> {
 // Helper methods that modify substitutions.
 
 impl<'a, 'gcx, 'tcx> ty::TraitRef<'tcx> {
-    pub fn from_method(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn from_method(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                        trait_id: DefId,
                        substs: &Substs<'tcx>)
                        -> ty::TraitRef<'tcx> {
@@ -572,7 +572,7 @@ impl<'a, 'gcx, 'tcx> ty::TraitRef<'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> ty::ExistentialTraitRef<'tcx> {
-    pub fn erase_self_ty(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn erase_self_ty(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                          trait_ref: ty::TraitRef<'tcx>)
                          -> ty::ExistentialTraitRef<'tcx> {
         // Assert there is a Self.
@@ -590,7 +590,7 @@ impl<'a, 'gcx, 'tcx> ty::PolyExistentialTraitRef<'tcx> {
     /// we convert the principal trait-ref into a normal trait-ref,
     /// you must give *some* self-type. A common choice is `mk_err()`
     /// or some skolemized type.
-    pub fn with_self_ty(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn with_self_ty(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                         self_ty: Ty<'tcx>)
                         -> ty::PolyTraitRef<'tcx>  {
         // otherwise the escaping regions would be captured by the binder

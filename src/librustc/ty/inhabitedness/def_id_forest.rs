@@ -22,7 +22,7 @@ use ty::{DefId, DefIdTree};
 /// This is used to represent a set of modules in which a type is visibly
 /// uninhabited.
 #[derive(Clone)]
-pub struct DefIdForest {
+pub(crate) struct DefIdForest {
     /// The minimal set of DefIds required to represent the whole set.
     /// If A and B are DefIds in the DefIdForest, and A is a descendant
     /// of B, then only B will be in root_ids.
@@ -33,7 +33,7 @@ pub struct DefIdForest {
 
 impl<'a, 'gcx, 'tcx> DefIdForest {
     /// Create an empty forest.
-    pub fn empty() -> DefIdForest {
+    pub(crate) fn empty() -> DefIdForest {
         DefIdForest {
             root_ids: SmallVec::new(),
         }
@@ -42,13 +42,13 @@ impl<'a, 'gcx, 'tcx> DefIdForest {
     /// Create a forest consisting of a single tree representing the entire
     /// crate.
     #[inline]
-    pub fn full(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> DefIdForest {
+    pub(crate) fn full(tcx: TyCtxt<'a, 'gcx, 'tcx>) -> DefIdForest {
         let crate_id = tcx.hir.local_def_id(CRATE_NODE_ID);
         DefIdForest::from_id(crate_id)
     }
 
     /// Create a forest containing a DefId and all its descendants.
-    pub fn from_id(id: DefId) -> DefIdForest {
+    pub(crate) fn from_id(id: DefId) -> DefIdForest {
         let mut root_ids = SmallVec::new();
         root_ids.push(id);
         DefIdForest {
@@ -57,12 +57,12 @@ impl<'a, 'gcx, 'tcx> DefIdForest {
     }
 
     /// Test whether the forest is empty.
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.root_ids.is_empty()
     }
 
     /// Test whether the forest contains a given DefId.
-    pub fn contains(&self,
+    pub(crate) fn contains(&self,
                     tcx: TyCtxt<'a, 'gcx, 'tcx>,
                     id: DefId) -> bool
     {
@@ -75,7 +75,7 @@ impl<'a, 'gcx, 'tcx> DefIdForest {
     }
 
     /// Calculate the intersection of a collection of forests.
-    pub fn intersection<I>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn intersection<I>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                            iter: I) -> DefIdForest
             where I: IntoIterator<Item=DefIdForest>
     {
@@ -105,7 +105,7 @@ impl<'a, 'gcx, 'tcx> DefIdForest {
     }
 
     /// Calculate the union of a collection of forests.
-    pub fn union<I>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn union<I>(tcx: TyCtxt<'a, 'gcx, 'tcx>,
                     iter: I) -> DefIdForest
             where I: IntoIterator<Item=DefIdForest>
     {

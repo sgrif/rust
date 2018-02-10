@@ -24,14 +24,14 @@ use rustc_const_math::ConstInt;
 use hir;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ExpectedFound<T> {
-    pub expected: T,
-    pub found: T,
+pub(crate) struct ExpectedFound<T> {
+    pub(crate) expected: T,
+    pub(crate) found: T,
 }
 
 // Data structures used in type unification
 #[derive(Clone, Debug)]
-pub enum TypeError<'tcx> {
+pub(crate) enum TypeError<'tcx> {
     Mismatch,
     UnsafetyMismatch(ExpectedFound<hir::Unsafety>),
     AbiMismatch(ExpectedFound<abi::Abi>),
@@ -63,7 +63,7 @@ pub enum TypeError<'tcx> {
 }
 
 #[derive(Clone, RustcEncodable, RustcDecodable, PartialEq, Eq, Hash, Debug, Copy)]
-pub enum UnconstrainedNumeric {
+pub(crate) enum UnconstrainedNumeric {
     UnconstrainedFloat,
     UnconstrainedInt,
     Neither,
@@ -184,7 +184,7 @@ impl<'tcx> fmt::Display for TypeError<'tcx> {
 }
 
 impl<'a, 'gcx, 'lcx, 'tcx> ty::TyS<'tcx> {
-    pub fn sort_string(&self, tcx: TyCtxt<'a, 'gcx, 'lcx>) -> String {
+    pub(crate) fn sort_string(&self, tcx: TyCtxt<'a, 'gcx, 'lcx>) -> String {
         match self.sty {
             ty::TyBool | ty::TyChar | ty::TyInt(_) |
             ty::TyUint(_) | ty::TyFloat(_) | ty::TyStr | ty::TyNever => self.to_string(),
@@ -250,7 +250,7 @@ impl<'a, 'gcx, 'lcx, 'tcx> ty::TyS<'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
-    pub fn note_and_explain_type_err(self,
+    pub(crate) fn note_and_explain_type_err(self,
                                      db: &mut DiagnosticBuilder,
                                      err: &TypeError<'tcx>,
                                      sp: Span) {

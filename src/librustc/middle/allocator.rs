@@ -9,14 +9,14 @@
 // except according to those terms.
 
 #[derive(Clone, Copy)]
-pub enum AllocatorKind {
+pub(crate) enum AllocatorKind {
     Global,
     DefaultLib,
     DefaultExe,
 }
 
 impl AllocatorKind {
-    pub fn fn_name(&self, base: &str) -> String {
+    pub(crate) fn fn_name(&self, base: &str) -> String {
         match *self {
             AllocatorKind::Global => format!("__rg_{}", base),
             AllocatorKind::DefaultLib => format!("__rdl_{}", base),

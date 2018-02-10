@@ -18,25 +18,25 @@ pub struct Fingerprint(u64, u64);
 
 impl Fingerprint {
 
-    pub const ZERO: Fingerprint = Fingerprint(0, 0);
+    pub(crate) const ZERO: Fingerprint = Fingerprint(0, 0);
 
     #[inline]
-    pub fn from_smaller_hash(hash: u64) -> Fingerprint {
+    pub(crate) fn from_smaller_hash(hash: u64) -> Fingerprint {
         Fingerprint(hash, hash)
     }
 
     #[inline]
-    pub fn to_smaller_hash(&self) -> u64 {
+    pub(crate) fn to_smaller_hash(&self) -> u64 {
         self.0
     }
 
     #[inline]
-    pub fn as_value(&self) -> (u64, u64) {
+    pub(crate) fn as_value(&self) -> (u64, u64) {
         (self.0, self.1)
     }
 
     #[inline]
-    pub fn combine(self, other: Fingerprint) -> Fingerprint {
+    pub(crate) fn combine(self, other: Fingerprint) -> Fingerprint {
         // See https://stackoverflow.com/a/27952689 on why this function is
         // implemented this way.
         Fingerprint(
@@ -45,17 +45,17 @@ impl Fingerprint {
         )
     }
 
-    pub fn to_hex(&self) -> String {
+    pub(crate) fn to_hex(&self) -> String {
         format!("{:x}{:x}", self.0, self.1)
     }
 
-    pub fn encode_opaque(&self, encoder: &mut Encoder) -> EncodeResult {
+    pub(crate) fn encode_opaque(&self, encoder: &mut Encoder) -> EncodeResult {
         let bytes: [u8; 16] = unsafe { mem::transmute([self.0.to_le(), self.1.to_le()]) };
 
         encoder.emit_raw_bytes(&bytes)
     }
 
-    pub fn decode_opaque<'a>(decoder: &mut Decoder<'a>) -> Result<Fingerprint, String> {
+    pub(crate) fn decode_opaque<'a>(decoder: &mut Decoder<'a>) -> Result<Fingerprint, String> {
         let mut bytes = [0; 16];
 
         decoder.read_raw_bytes(&mut bytes)?;

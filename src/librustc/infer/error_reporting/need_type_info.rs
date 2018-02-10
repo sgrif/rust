@@ -86,7 +86,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn need_type_info(&self, body_id: Option<hir::BodyId>, span: Span, ty: Ty<'tcx>) {
+    pub(crate) fn need_type_info(&self, body_id: Option<hir::BodyId>, span: Span, ty: Ty<'tcx>) {
         let ty = self.resolve_type_vars_if_possible(&ty);
         let name = self.extract_type_name(&ty);
 

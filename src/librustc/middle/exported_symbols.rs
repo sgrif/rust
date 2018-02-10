@@ -14,7 +14,7 @@
 /// `Rust` will only be exported if the crate produced is a Rust
 /// dylib.
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum SymbolExportLevel {
+pub(crate) enum SymbolExportLevel {
     C,
     Rust,
 }
@@ -25,7 +25,7 @@ impl_stable_hash_for!(enum self::SymbolExportLevel {
 });
 
 impl SymbolExportLevel {
-    pub fn is_below_threshold(self, threshold: SymbolExportLevel) -> bool {
+    pub(crate) fn is_below_threshold(self, threshold: SymbolExportLevel) -> bool {
         if threshold == SymbolExportLevel::Rust {
             // We export everything from Rust dylibs
             true

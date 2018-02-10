@@ -75,7 +75,7 @@ module (not to be confused with the `Ty` struct from [the HIR]). This
 is in fact a simple type alias for a reference with `'tcx` lifetime:
 
 ```rust
-pub type Ty<'tcx> = &'tcx TyS<'tcx>;
+pub(crate) type Ty<'tcx> = &'tcx TyS<'tcx>;
 ```
 
 [the HIR]: ../hir/README.md

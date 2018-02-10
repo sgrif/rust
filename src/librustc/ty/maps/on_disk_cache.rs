@@ -49,7 +49,7 @@ const TAG_INVALID_SPAN: u8 = 1;
 /// previous compilation session. This data will eventually include the results
 /// of a few selected queries (like `typeck_tables_of` and `mir_optimized`) and
 /// any diagnostics that have been emitted during a query.
-pub struct OnDiskCache<'sess> {
+pub(crate) struct OnDiskCache<'sess> {
 
     // The complete cache data in serialized form.
     serialized_data: Vec<u8>,
@@ -109,7 +109,7 @@ impl AbsoluteBytePos {
 
 impl<'sess> OnDiskCache<'sess> {
     /// Create a new OnDiskCache instance from the serialized data in `data`.
-    pub fn new(sess: &'sess Session, data: Vec<u8>, start_pos: usize) -> OnDiskCache<'sess> {
+    pub(crate) fn new(sess: &'sess Session, data: Vec<u8>, start_pos: usize) -> OnDiskCache<'sess> {
         debug_assert!(sess.opts.incremental.is_some());
 
         // Wrapping in a scope so we can borrow `data`
@@ -143,7 +143,7 @@ impl<'sess> OnDiskCache<'sess> {
         }
     }
 
-    pub fn new_empty(codemap: &'sess CodeMap) -> OnDiskCache<'sess> {
+    pub(crate) fn new_empty(codemap: &'sess CodeMap) -> OnDiskCache<'sess> {
         OnDiskCache {
             serialized_data: Vec::new(),
             file_index_to_stable_id: FxHashMap(),
@@ -158,7 +158,7 @@ impl<'sess> OnDiskCache<'sess> {
         }
     }
 
-    pub fn serialize<'a, 'tcx, E>(&self,
+    pub(crate) fn serialize<'a, 'tcx, E>(&self,
                                   tcx: TyCtxt<'a, 'tcx, 'tcx>,
                                   encoder: &mut E)
                                   -> Result<(), E::Error>
@@ -278,7 +278,7 @@ impl<'sess> OnDiskCache<'sess> {
     }
 
     /// Load a diagnostic emitted during the previous compilation session.
-    pub fn load_diagnostics<'a, 'tcx>(&self,
+    pub(crate) fn load_diagnostics<'a, 'tcx>(&self,
                                       tcx: TyCtxt<'a, 'tcx, 'tcx>,
                                       dep_node_index: SerializedDepNodeIndex)
                                       -> Vec<Diagnostic> {
@@ -294,7 +294,7 @@ impl<'sess> OnDiskCache<'sess> {
     /// Store a diagnostic emitted during the current compilation session.
     /// Anything stored like this will be available via `load_diagnostics` in
     /// the next compilation session.
-    pub fn store_diagnostics(&self,
+    pub(crate) fn store_diagnostics(&self,
                              dep_node_index: DepNodeIndex,
                              diagnostics: Vec<Diagnostic>) {
         let mut current_diagnostics = self.current_diagnostics.borrow_mut();
@@ -304,7 +304,7 @@ impl<'sess> OnDiskCache<'sess> {
 
     /// Returns the cached query result if there is something in the cache for
     /// the given SerializedDepNodeIndex. Otherwise returns None.
-    pub fn try_load_query_result<'tcx, T>(&self,
+    pub(crate) fn try_load_query_result<'tcx, T>(&self,
                                           tcx: TyCtxt<'_, 'tcx, 'tcx>,
                                           dep_node_index: SerializedDepNodeIndex)
                                           -> Option<T>
@@ -320,7 +320,7 @@ impl<'sess> OnDiskCache<'sess> {
     /// Since many anonymous queries can share the same `DepNode`, we aggregate
     /// them -- as opposed to regular queries where we assume that there is a
     /// 1:1 relationship between query-key and `DepNode`.
-    pub fn store_diagnostics_for_anon_node(&self,
+    pub(crate) fn store_diagnostics_for_anon_node(&self,
                                            dep_node_index: DepNodeIndex,
                                            mut diagnostics: Vec<Diagnostic>) {
         let mut current_diagnostics = self.current_diagnostics.borrow_mut();
@@ -961,7 +961,7 @@ impl<'enc, 'a, 'tcx, E> Encoder for CacheEncoder<'enc, 'a, 'tcx, E>
 struct IntEncodedWithFixedSize(u64);
 
 impl IntEncodedWithFixedSize {
-    pub const ENCODED_SIZE: usize = 8;
+    pub(crate) const ENCODED_SIZE: usize = 8;
 }
 
 impl UseSpecializedEncodable for IntEncodedWithFixedSize {}

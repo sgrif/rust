@@ -8,8 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub use self::Integer::*;
-pub use self::Primitive::*;
+pub(crate) use self::Integer::*;
+pub(crate) use self::Primitive::*;
 
 use session::{self, DataTypeKind, Session};
 use ty::{self, Ty, TyCtxt, TypeFoldable, ReprOptions, ReprFlags};
@@ -31,22 +31,22 @@ use rustc_data_structures::stable_hasher::{HashStable, StableHasher,
 
 /// Parsed [Data layout](http://llvm.org/docs/LangRef.html#data-layout)
 /// for a target, which contains everything needed to compute layouts.
-pub struct TargetDataLayout {
-    pub endian: Endian,
-    pub i1_align: Align,
-    pub i8_align: Align,
-    pub i16_align: Align,
-    pub i32_align: Align,
-    pub i64_align: Align,
-    pub i128_align: Align,
-    pub f32_align: Align,
-    pub f64_align: Align,
-    pub pointer_size: Size,
-    pub pointer_align: Align,
-    pub aggregate_align: Align,
+pub(crate) struct TargetDataLayout {
+    pub(crate) endian: Endian,
+    pub(crate) i1_align: Align,
+    pub(crate) i8_align: Align,
+    pub(crate) i16_align: Align,
+    pub(crate) i32_align: Align,
+    pub(crate) i64_align: Align,
+    pub(crate) i128_align: Align,
+    pub(crate) f32_align: Align,
+    pub(crate) f64_align: Align,
+    pub(crate) pointer_size: Size,
+    pub(crate) pointer_align: Align,
+    pub(crate) aggregate_align: Align,
 
     /// Alignments for vector types.
-    pub vector_align: Vec<(Size, Align)>
+    pub(crate) vector_align: Vec<(Size, Align)>
 }
 
 impl Default for TargetDataLayout {
@@ -74,7 +74,7 @@ impl Default for TargetDataLayout {
 }
 
 impl TargetDataLayout {
-    pub fn parse(sess: &Session) -> TargetDataLayout {
+    pub(crate) fn parse(sess: &Session) -> TargetDataLayout {
         // Parse a bit count from a string.
         let parse_bits = |s: &str, kind: &str, cause: &str| {
             s.parse::<u64>().unwrap_or_else(|err| {
@@ -185,7 +185,7 @@ impl TargetDataLayout {
     /// to represent object size in bits. It would need to be 1 << 61 to account for this, but is
     /// currently conservatively bounded to 1 << 47 as that is enough to cover the current usable
     /// address space on 64-bit ARMv8 and x86_64.
-    pub fn obj_size_bound(&self) -> u64 {
+    pub(crate) fn obj_size_bound(&self) -> u64 {
         match self.pointer_size.bits() {
             16 => 1 << 15,
             32 => 1 << 31,
@@ -194,7 +194,7 @@ impl TargetDataLayout {
         }
     }
 
-    pub fn ptr_sized_integer(&self) -> Integer {
+    pub(crate) fn ptr_sized_integer(&self) -> Integer {
         match self.pointer_size.bits() {
             16 => I16,
             32 => I32,
@@ -203,7 +203,7 @@ impl TargetDataLayout {
         }
     }
 
-    pub fn vector_align(&self, vec_size: Size) -> Align {
+    pub(crate) fn vector_align(&self, vec_size: Size) -> Align {
         for &(size, align) in &self.vector_align {
             if size == vec_size {
                 return align;
@@ -216,7 +216,7 @@ impl TargetDataLayout {
     }
 }
 
-pub trait HasDataLayout: Copy {
+pub(crate) trait HasDataLayout: Copy {
     fn data_layout(&self) -> &TargetDataLayout;
 }
 
@@ -228,24 +228,24 @@ impl<'a> HasDataLayout for &'a TargetDataLayout {
 
 /// Endianness of the target, which must match cfg(target-endian).
 #[derive(Copy, Clone)]
-pub enum Endian {
+pub(crate) enum Endian {
     Little,
     Big
 }
 
 /// Size of a type in bytes.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct Size {
+pub(crate) struct Size {
     raw: u64
 }
 
 impl Size {
-    pub fn from_bits(bits: u64) -> Size {
+    pub(crate) fn from_bits(bits: u64) -> Size {
         // Avoid potential overflow from `bits + 7`.
         Size::from_bytes(bits / 8 + ((bits % 8) + 7) / 8)
     }
 
-    pub fn from_bytes(bytes: u64) -> Size {
+    pub(crate) fn from_bytes(bytes: u64) -> Size {
         if bytes >= (1 << 61) {
             bug!("Size::from_bytes: {} bytes in bits doesn't fit in u64", bytes)
         }
@@ -254,25 +254,25 @@ impl Size {
         }
     }
 
-    pub fn bytes(self) -> u64 {
+    pub(crate) fn bytes(self) -> u64 {
         self.raw
     }
 
-    pub fn bits(self) -> u64 {
+    pub(crate) fn bits(self) -> u64 {
         self.bytes() * 8
     }
 
-    pub fn abi_align(self, align: Align) -> Size {
+    pub(crate) fn abi_align(self, align: Align) -> Size {
         let mask = align.abi() - 1;
         Size::from_bytes((self.bytes() + mask) & !mask)
     }
 
-    pub fn is_abi_aligned(self, align: Align) -> bool {
+    pub(crate) fn is_abi_aligned(self, align: Align) -> bool {
         let mask = align.abi() - 1;
         self.bytes() & mask == 0
     }
 
-    pub fn checked_add<C: HasDataLayout>(self, offset: Size, cx: C) -> Option<Size> {
+    pub(crate) fn checked_add<C: HasDataLayout>(self, offset: Size, cx: C) -> Option<Size> {
         let dl = cx.data_layout();
 
         // Each Size is less than dl.obj_size_bound(), so the sum is
@@ -286,7 +286,7 @@ impl Size {
         }
     }
 
-    pub fn checked_mul<C: HasDataLayout>(self, count: u64, cx: C) -> Option<Size> {
+    pub(crate) fn checked_mul<C: HasDataLayout>(self, count: u64, cx: C) -> Option<Size> {
         let dl = cx.data_layout();
 
         match self.bytes().checked_mul(count) {
@@ -343,18 +343,18 @@ impl AddAssign for Size {
 /// value of 2<sup>(2<sup>8</sup> - 1)</sup>, which is limited by LLVM to a i32, with
 /// a maximum capacity of 2<sup>31</sup> - 1 or 2147483647.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Align {
+pub(crate) struct Align {
     abi: u8,
     pref: u8,
 }
 
 impl Align {
-    pub fn from_bits(abi: u64, pref: u64) -> Result<Align, String> {
+    pub(crate) fn from_bits(abi: u64, pref: u64) -> Result<Align, String> {
         Align::from_bytes(Size::from_bits(abi).bytes(),
                           Size::from_bits(pref).bytes())
     }
 
-    pub fn from_bytes(abi: u64, pref: u64) -> Result<Align, String> {
+    pub(crate) fn from_bytes(abi: u64, pref: u64) -> Result<Align, String> {
         let log2 = |align: u64| {
             // Treat an alignment of 0 bytes like 1-byte alignment.
             if align == 0 {
@@ -382,30 +382,30 @@ impl Align {
         })
     }
 
-    pub fn abi(self) -> u64 {
+    pub(crate) fn abi(self) -> u64 {
         1 << self.abi
     }
 
-    pub fn pref(self) -> u64 {
+    pub(crate) fn pref(self) -> u64 {
         1 << self.pref
     }
 
-    pub fn abi_bits(self) -> u64 {
+    pub(crate) fn abi_bits(self) -> u64 {
         self.abi() * 8
     }
 
-    pub fn pref_bits(self) -> u64 {
+    pub(crate) fn pref_bits(self) -> u64 {
         self.pref() * 8
     }
 
-    pub fn min(self, other: Align) -> Align {
+    pub(crate) fn min(self, other: Align) -> Align {
         Align {
             abi: cmp::min(self.abi, other.abi),
             pref: cmp::min(self.pref, other.pref),
         }
     }
 
-    pub fn max(self, other: Align) -> Align {
+    pub(crate) fn max(self, other: Align) -> Align {
         Align {
             abi: cmp::max(self.abi, other.abi),
             pref: cmp::max(self.pref, other.pref),
@@ -415,7 +415,7 @@ impl Align {
 
 /// Integers, also used for enum discriminants.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum Integer {
+pub(crate) enum Integer {
     I8,
     I16,
     I32,
@@ -424,7 +424,7 @@ pub enum Integer {
 }
 
 impl<'a, 'tcx> Integer {
-    pub fn size(&self) -> Size {
+    pub(crate) fn size(&self) -> Size {
         match *self {
             I8 => Size::from_bytes(1),
             I16 => Size::from_bytes(2),
@@ -434,7 +434,7 @@ impl<'a, 'tcx> Integer {
         }
     }
 
-    pub fn align<C: HasDataLayout>(&self, cx: C) -> Align {
+    pub(crate) fn align<C: HasDataLayout>(&self, cx: C) -> Align {
         let dl = cx.data_layout();
 
         match *self {
@@ -446,7 +446,7 @@ impl<'a, 'tcx> Integer {
         }
     }
 
-    pub fn to_ty(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>, signed: bool) -> Ty<'tcx> {
+    pub(crate) fn to_ty(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>, signed: bool) -> Ty<'tcx> {
         match (*self, signed) {
             (I8, false) => tcx.types.u8,
             (I16, false) => tcx.types.u16,
@@ -462,7 +462,7 @@ impl<'a, 'tcx> Integer {
     }
 
     /// Find the smallest Integer type which can represent the signed value.
-    pub fn fit_signed(x: i128) -> Integer {
+    pub(crate) fn fit_signed(x: i128) -> Integer {
         match x {
             -0x0000_0000_0000_0080...0x0000_0000_0000_007f => I8,
             -0x0000_0000_0000_8000...0x0000_0000_0000_7fff => I16,
@@ -473,7 +473,7 @@ impl<'a, 'tcx> Integer {
     }
 
     /// Find the smallest Integer type which can represent the unsigned value.
-    pub fn fit_unsigned(x: u128) -> Integer {
+    pub(crate) fn fit_unsigned(x: u128) -> Integer {
         match x {
             0...0x0000_0000_0000_00ff => I8,
             0...0x0000_0000_0000_ffff => I16,
@@ -484,7 +484,7 @@ impl<'a, 'tcx> Integer {
     }
 
     /// Find the smallest integer with the given alignment.
-    pub fn for_abi_align<C: HasDataLayout>(cx: C, align: Align) -> Option<Integer> {
+    pub(crate) fn for_abi_align<C: HasDataLayout>(cx: C, align: Align) -> Option<Integer> {
         let dl = cx.data_layout();
 
         let wanted = align.abi();
@@ -497,7 +497,7 @@ impl<'a, 'tcx> Integer {
     }
 
     /// Find the largest integer with the given alignment or less.
-    pub fn approximate_abi_align<C: HasDataLayout>(cx: C, align: Align) -> Integer {
+    pub(crate) fn approximate_abi_align<C: HasDataLayout>(cx: C, align: Align) -> Integer {
         let dl = cx.data_layout();
 
         let wanted = align.abi();
@@ -511,7 +511,7 @@ impl<'a, 'tcx> Integer {
     }
 
     /// Get the Integer type from an attr::IntType.
-    pub fn from_attr<C: HasDataLayout>(cx: C, ity: attr::IntType) -> Integer {
+    pub(crate) fn from_attr<C: HasDataLayout>(cx: C, ity: attr::IntType) -> Integer {
         let dl = cx.data_layout();
 
         match ity {
@@ -580,7 +580,7 @@ impl<'a, 'tcx> Integer {
 
 /// Fundamental unit of memory access and layout.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Primitive {
+pub(crate) enum Primitive {
     /// The `bool` is the signedness of the `Integer` type.
     ///
     /// One would think we would not care about such details this low down,
@@ -595,7 +595,7 @@ pub enum Primitive {
 }
 
 impl<'a, 'tcx> Primitive {
-    pub fn size<C: HasDataLayout>(self, cx: C) -> Size {
+    pub(crate) fn size<C: HasDataLayout>(self, cx: C) -> Size {
         let dl = cx.data_layout();
 
         match self {
@@ -606,7 +606,7 @@ impl<'a, 'tcx> Primitive {
         }
     }
 
-    pub fn align<C: HasDataLayout>(self, cx: C) -> Align {
+    pub(crate) fn align<C: HasDataLayout>(self, cx: C) -> Align {
         let dl = cx.data_layout();
 
         match self {
@@ -617,7 +617,7 @@ impl<'a, 'tcx> Primitive {
         }
     }
 
-    pub fn to_ty(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) -> Ty<'tcx> {
+    pub(crate) fn to_ty(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) -> Ty<'tcx> {
         match *self {
             Int(i, signed) => i.to_ty(tcx, signed),
             F32 => tcx.types.f32,
@@ -629,19 +629,19 @@ impl<'a, 'tcx> Primitive {
 
 /// Information about one scalar component of a Rust type.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Scalar {
-    pub value: Primitive,
+pub(crate) struct Scalar {
+    pub(crate) value: Primitive,
 
     /// Inclusive wrap-around range of valid values, that is, if
     /// min > max, it represents min..=u128::MAX followed by 0..=max.
     // FIXME(eddyb) always use the shortest range, e.g. by finding
     // the largest space between two consecutive valid values and
     // taking everything else as the (shortest) valid range.
-    pub valid_range: RangeInclusive<u128>,
+    pub(crate) valid_range: RangeInclusive<u128>,
 }
 
 impl Scalar {
-    pub fn is_bool(&self) -> bool {
+    pub(crate) fn is_bool(&self) -> bool {
         if let Int(I8, _) = self.value {
             self.valid_range == (0..=1)
         } else {
@@ -654,17 +654,17 @@ impl Scalar {
 ///
 /// - For a trait object, this is the address of the box.
 /// - For a slice, this is the base address.
-pub const FAT_PTR_ADDR: usize = 0;
+pub(crate) const FAT_PTR_ADDR: usize = 0;
 
 /// The second half of a fat pointer.
 ///
 /// - For a trait object, this is the address of the vtable.
 /// - For a slice, this is the length.
-pub const FAT_PTR_EXTRA: usize = 1;
+pub(crate) const FAT_PTR_EXTRA: usize = 1;
 
 /// Describes how the fields of a type are located in memory.
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub enum FieldPlacement {
+pub(crate) enum FieldPlacement {
     /// All fields start at no offset. The `usize` is the field count.
     Union(usize),
 
@@ -696,7 +696,7 @@ pub enum FieldPlacement {
 }
 
 impl FieldPlacement {
-    pub fn count(&self) -> usize {
+    pub(crate) fn count(&self) -> usize {
         match *self {
             FieldPlacement::Union(count) => count,
             FieldPlacement::Array { count, .. } => {
@@ -708,7 +708,7 @@ impl FieldPlacement {
         }
     }
 
-    pub fn offset(&self, i: usize) -> Size {
+    pub(crate) fn offset(&self, i: usize) -> Size {
         match *self {
             FieldPlacement::Union(_) => Size::from_bytes(0),
             FieldPlacement::Array { stride, count } => {
@@ -720,7 +720,7 @@ impl FieldPlacement {
         }
     }
 
-    pub fn memory_index(&self, i: usize) -> usize {
+    pub(crate) fn memory_index(&self, i: usize) -> usize {
         match *self {
             FieldPlacement::Union(_) |
             FieldPlacement::Array { .. } => i,
@@ -734,7 +734,7 @@ impl FieldPlacement {
 
     /// Get source indices of the fields by increasing offsets.
     #[inline]
-    pub fn index_by_increasing_offset<'a>(&'a self) -> impl iter::Iterator<Item=usize>+'a {
+    pub(crate) fn index_by_increasing_offset<'a>(&'a self) -> impl iter::Iterator<Item=usize>+'a {
         let mut inverse_small = [0u8; 64];
         let mut inverse_big = vec![];
         let use_small = self.count() <= inverse_small.len();
@@ -769,7 +769,7 @@ impl FieldPlacement {
 /// Describes how values of the type are passed by target ABIs,
 /// in terms of categories of C types there are ABI rules for.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Abi {
+pub(crate) enum Abi {
     Uninhabited,
     Scalar(Scalar),
     ScalarPair(Scalar, Scalar),
@@ -785,7 +785,7 @@ pub enum Abi {
 
 impl Abi {
     /// Returns true if the layout corresponds to an unsized type.
-    pub fn is_unsized(&self) -> bool {
+    pub(crate) fn is_unsized(&self) -> bool {
         match *self {
             Abi::Uninhabited |
             Abi::Scalar(_) |
@@ -797,7 +797,7 @@ impl Abi {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub enum Variants {
+pub(crate) enum Variants {
     /// Single enum variants, structs/tuples, unions, and all non-ADTs.
     Single {
         index: usize
@@ -829,7 +829,7 @@ pub enum Variants {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum LayoutError<'tcx> {
+pub(crate) enum LayoutError<'tcx> {
     Unknown(Ty<'tcx>),
     SizeOverflow(Ty<'tcx>)
 }
@@ -848,12 +848,12 @@ impl<'tcx> fmt::Display for LayoutError<'tcx> {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct LayoutDetails {
-    pub variants: Variants,
-    pub fields: FieldPlacement,
-    pub abi: Abi,
-    pub align: Align,
-    pub size: Size
+pub(crate) struct LayoutDetails {
+    pub(crate) variants: Variants,
+    pub(crate) fields: FieldPlacement,
+    pub(crate) abi: Abi,
+    pub(crate) align: Align,
+    pub(crate) size: Size
 }
 
 impl LayoutDetails {
@@ -902,7 +902,7 @@ fn layout_raw<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>,
     layout
 }
 
-pub fn provide(providers: &mut ty::maps::Providers) {
+pub(crate) fn provide(providers: &mut ty::maps::Providers) {
     *providers = ty::maps::Providers {
         layout_raw,
         ..*providers
@@ -910,9 +910,9 @@ pub fn provide(providers: &mut ty::maps::Providers) {
 }
 
 #[derive(Copy, Clone)]
-pub struct LayoutCx<'tcx, C> {
-    pub tcx: C,
-    pub param_env: ty::ParamEnv<'tcx>
+pub(crate) struct LayoutCx<'tcx, C> {
+    pub(crate) tcx: C,
+    pub(crate) param_env: ty::ParamEnv<'tcx>
 }
 
 impl<'a, 'tcx> LayoutCx<'tcx, TyCtxt<'a, 'tcx, 'tcx>> {
@@ -1831,7 +1831,7 @@ impl<'a, 'tcx> LayoutCx<'tcx, TyCtxt<'a, 'tcx, 'tcx>> {
 /// newtypes thereof and null pointer optimized enums are allowed), it is
 /// enough to statically check common usecases of transmute.
 #[derive(Copy, Clone, Debug)]
-pub enum SizeSkeleton<'tcx> {
+pub(crate) enum SizeSkeleton<'tcx> {
     /// Any statically computable Layout.
     Known(Size),
 
@@ -1847,7 +1847,7 @@ pub enum SizeSkeleton<'tcx> {
 }
 
 impl<'a, 'tcx> SizeSkeleton<'tcx> {
-    pub fn compute(ty: Ty<'tcx>,
+    pub(crate) fn compute(ty: Ty<'tcx>,
                    tcx: TyCtxt<'a, 'tcx, 'tcx>,
                    param_env: ty::ParamEnv<'tcx>)
                    -> Result<SizeSkeleton<'tcx>, LayoutError<'tcx>> {
@@ -1954,7 +1954,7 @@ impl<'a, 'tcx> SizeSkeleton<'tcx> {
         }
     }
 
-    pub fn same_size(self, other: SizeSkeleton) -> bool {
+    pub(crate) fn same_size(self, other: SizeSkeleton) -> bool {
         match (self, other) {
             (SizeSkeleton::Known(a), SizeSkeleton::Known(b)) => a == b,
             (SizeSkeleton::Pointer { tail: a, .. },
@@ -1972,8 +1972,8 @@ impl<'a, 'tcx> SizeSkeleton<'tcx> {
 /// layouts for which Rust types do not exist, such as enum variants
 /// or synthetic fields of enums (i.e. discriminants) and fat pointers.
 #[derive(Copy, Clone, Debug)]
-pub struct TyLayout<'tcx> {
-    pub ty: Ty<'tcx>,
+pub(crate) struct TyLayout<'tcx> {
+    pub(crate) ty: Ty<'tcx>,
     details: &'tcx LayoutDetails
 }
 
@@ -1984,7 +1984,7 @@ impl<'tcx> Deref for TyLayout<'tcx> {
     }
 }
 
-pub trait HasTyCtxt<'tcx>: HasDataLayout {
+pub(crate) trait HasTyCtxt<'tcx>: HasDataLayout {
     fn tcx<'a>(&'a self) -> TyCtxt<'a, 'tcx, 'tcx>;
 }
 
@@ -2012,7 +2012,7 @@ impl<'gcx, 'tcx, T: HasTyCtxt<'gcx>> HasTyCtxt<'gcx> for LayoutCx<'tcx, T> {
     }
 }
 
-pub trait MaybeResult<T> {
+pub(crate) trait MaybeResult<T> {
     fn from_ok(x: T) -> Self;
     fn map_same<F: FnOnce(T) -> T>(self, f: F) -> Self;
 }
@@ -2035,7 +2035,7 @@ impl<T, E> MaybeResult<T> for Result<T, E> {
     }
 }
 
-pub trait LayoutOf<T> {
+pub(crate) trait LayoutOf<T> {
     type TyLayout;
 
     fn layout_of(self, ty: T) -> Self::TyLayout;
@@ -2102,7 +2102,7 @@ impl<'a, 'tcx> TyCtxt<'a, 'tcx, 'tcx> {
     /// Computes the layout of a type. Note that this implicitly
     /// executes in "reveal all" mode.
     #[inline]
-    pub fn layout_of(self, param_env_and_ty: ty::ParamEnvAnd<'tcx, Ty<'tcx>>)
+    pub(crate) fn layout_of(self, param_env_and_ty: ty::ParamEnvAnd<'tcx, Ty<'tcx>>)
                      -> Result<TyLayout<'tcx>, LayoutError<'tcx>> {
         let cx = LayoutCx {
             tcx: self,
@@ -2116,7 +2116,7 @@ impl<'a, 'tcx> ty::maps::TyCtxtAt<'a, 'tcx, 'tcx> {
     /// Computes the layout of a type. Note that this implicitly
     /// executes in "reveal all" mode.
     #[inline]
-    pub fn layout_of(self, param_env_and_ty: ty::ParamEnvAnd<'tcx, Ty<'tcx>>)
+    pub(crate) fn layout_of(self, param_env_and_ty: ty::ParamEnvAnd<'tcx, Ty<'tcx>>)
                      -> Result<TyLayout<'tcx>, LayoutError<'tcx>> {
         let cx = LayoutCx {
             tcx: self,
@@ -2127,7 +2127,7 @@ impl<'a, 'tcx> ty::maps::TyCtxtAt<'a, 'tcx, 'tcx> {
 }
 
 impl<'a, 'tcx> TyLayout<'tcx> {
-    pub fn for_variant<C>(&self, cx: C, variant_index: usize) -> Self
+    pub(crate) fn for_variant<C>(&self, cx: C, variant_index: usize) -> Self
         where C: LayoutOf<Ty<'tcx>> + HasTyCtxt<'tcx>,
               C::TyLayout: MaybeResult<TyLayout<'tcx>>
     {
@@ -2164,7 +2164,7 @@ impl<'a, 'tcx> TyLayout<'tcx> {
         }
     }
 
-    pub fn field<C>(&self, cx: C, i: usize) -> C::TyLayout
+    pub(crate) fn field<C>(&self, cx: C, i: usize) -> C::TyLayout
         where C: LayoutOf<Ty<'tcx>> + HasTyCtxt<'tcx>,
               C::TyLayout: MaybeResult<TyLayout<'tcx>>
     {
@@ -2267,12 +2267,12 @@ impl<'a, 'tcx> TyLayout<'tcx> {
     }
 
     /// Returns true if the layout corresponds to an unsized type.
-    pub fn is_unsized(&self) -> bool {
+    pub(crate) fn is_unsized(&self) -> bool {
         self.abi.is_unsized()
     }
 
     /// Returns true if the type is a ZST and not unsized.
-    pub fn is_zst(&self) -> bool {
+    pub(crate) fn is_zst(&self) -> bool {
         match self.abi {
             Abi::Uninhabited => true,
             Abi::Scalar(_) |
@@ -2282,7 +2282,7 @@ impl<'a, 'tcx> TyLayout<'tcx> {
         }
     }
 
-    pub fn size_and_align(&self) -> (Size, Align) {
+    pub(crate) fn size_and_align(&self) -> (Size, Align) {
         (self.size, self.align)
     }
 

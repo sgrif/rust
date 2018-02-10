@@ -79,7 +79,7 @@ use syntax_pos::Span;
 
 macro_rules! make_mir_visitor {
     ($visitor_trait_name:ident, $($mutability:ident)*) => {
-        pub trait $visitor_trait_name<'tcx> {
+        pub(crate) trait $visitor_trait_name<'tcx> {
             // Override these, and call `self.super_xxx` to revert back to the
             // default behavior.
 
@@ -825,7 +825,7 @@ macro_rules! make_mir_visitor {
 make_mir_visitor!(Visitor,);
 make_mir_visitor!(MutVisitor,mut);
 
-pub trait MirVisitable<'tcx> {
+pub(crate) trait MirVisitable<'tcx> {
     fn apply(&self, location: Location, visitor: &mut dyn Visitor<'tcx>);
 }
 
@@ -853,7 +853,7 @@ impl<'tcx> MirVisitable<'tcx> for Option<Terminator<'tcx>> {
 /// Extra information passed to `visit_ty` and friends to give context
 /// about where the type etc appears.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum TyContext {
+pub(crate) enum TyContext {
     LocalDecl {
         /// The index of the local variable we are visiting.
         local: Local,
@@ -872,7 +872,7 @@ pub enum TyContext {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum PlaceContext<'tcx> {
+pub(crate) enum PlaceContext<'tcx> {
     // Appears as LHS of an assignment
     Store,
 
@@ -922,7 +922,7 @@ pub enum PlaceContext<'tcx> {
 
 impl<'tcx> PlaceContext<'tcx> {
     /// Returns true if this place context represents a drop.
-    pub fn is_drop(&self) -> bool {
+    pub(crate) fn is_drop(&self) -> bool {
         match *self {
             PlaceContext::Drop => true,
             _ => false,
@@ -930,7 +930,7 @@ impl<'tcx> PlaceContext<'tcx> {
     }
 
     /// Returns true if this place context represents a storage live or storage dead marker.
-    pub fn is_storage_marker(&self) -> bool {
+    pub(crate) fn is_storage_marker(&self) -> bool {
         match *self {
             PlaceContext::StorageLive | PlaceContext::StorageDead => true,
             _ => false,
@@ -938,7 +938,7 @@ impl<'tcx> PlaceContext<'tcx> {
     }
 
     /// Returns true if this place context represents a storage live marker.
-    pub fn is_storage_live_marker(&self) -> bool {
+    pub(crate) fn is_storage_live_marker(&self) -> bool {
         match *self {
             PlaceContext::StorageLive => true,
             _ => false,
@@ -946,7 +946,7 @@ impl<'tcx> PlaceContext<'tcx> {
     }
 
     /// Returns true if this place context represents a storage dead marker.
-    pub fn is_storage_dead_marker(&self) -> bool {
+    pub(crate) fn is_storage_dead_marker(&self) -> bool {
         match *self {
             PlaceContext::StorageDead => true,
             _ => false,
@@ -954,7 +954,7 @@ impl<'tcx> PlaceContext<'tcx> {
     }
 
     /// Returns true if this place context represents a use that potentially changes the value.
-    pub fn is_mutating_use(&self) -> bool {
+    pub(crate) fn is_mutating_use(&self) -> bool {
         match *self {
             PlaceContext::Store | PlaceContext::AsmOutput | PlaceContext::Call |
             PlaceContext::Borrow { kind: BorrowKind::Mut { .. }, .. } |
@@ -972,7 +972,7 @@ impl<'tcx> PlaceContext<'tcx> {
     }
 
     /// Returns true if this place context represents a use that does not change the value.
-    pub fn is_nonmutating_use(&self) -> bool {
+    pub(crate) fn is_nonmutating_use(&self) -> bool {
         match *self {
             PlaceContext::Inspect | PlaceContext::Borrow { kind: BorrowKind::Shared, .. } |
             PlaceContext::Borrow { kind: BorrowKind::Unique, .. } |
@@ -987,7 +987,7 @@ impl<'tcx> PlaceContext<'tcx> {
         }
     }
 
-    pub fn is_use(&self) -> bool {
+    pub(crate) fn is_use(&self) -> bool {
         self.is_mutating_use() || self.is_nonmutating_use()
     }
 }

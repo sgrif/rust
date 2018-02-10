@@ -25,7 +25,7 @@ use middle::lang_items;
 /// inference variable, returns `None`, because we are not able to
 /// make any progress at all. This is to prevent "livelock" where we
 /// say "$0 is WF if $0 is WF".
-pub fn obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                    param_env: ty::ParamEnv<'tcx>,
                                    body_id: ast::NodeId,
                                    ty: Ty<'tcx>,
@@ -51,7 +51,7 @@ pub fn obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
 /// well-formed.  For example, if there is a trait `Set` defined like
 /// `trait Set<K:Eq>`, then the trait reference `Foo: Set<Bar>` is WF
 /// if `Bar: Eq`.
-pub fn trait_obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn trait_obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                          param_env: ty::ParamEnv<'tcx>,
                                          body_id: ast::NodeId,
                                          trait_ref: &ty::TraitRef<'tcx>,
@@ -63,7 +63,7 @@ pub fn trait_obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
     wf.normalize()
 }
 
-pub fn predicate_obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
+pub(crate) fn predicate_obligations<'a, 'gcx, 'tcx>(infcx: &InferCtxt<'a, 'gcx, 'tcx>,
                                              param_env: ty::ParamEnv<'tcx>,
                                              body_id: ast::NodeId,
                                              predicate: &ty::Predicate<'tcx>,
@@ -532,7 +532,7 @@ impl<'a, 'gcx, 'tcx> WfPredicates<'a, 'gcx, 'tcx> {
 /// they declare `trait SomeTrait : 'static`, for example, then
 /// `'static` would appear in the list. The hard work is done by
 /// `ty::required_region_bounds`, see that for more information.
-pub fn object_region_bounds<'a, 'gcx, 'tcx>(
+pub(crate) fn object_region_bounds<'a, 'gcx, 'tcx>(
     tcx: TyCtxt<'a, 'gcx, 'tcx>,
     existential_predicates: ty::Binder<&'tcx ty::Slice<ty::ExistentialPredicate<'tcx>>>)
     -> Vec<ty::Region<'tcx>>

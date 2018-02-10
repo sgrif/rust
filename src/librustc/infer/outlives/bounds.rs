@@ -24,7 +24,7 @@ use ty::wf;
 /// `OutlivesEnv` which in turn is supplied to the region checker and
 /// other parts of the inference system.
 #[derive(Debug)]
-pub enum OutlivesBound<'tcx> {
+pub(crate) enum OutlivesBound<'tcx> {
     RegionSubRegion(ty::Region<'tcx>, ty::Region<'tcx>),
     RegionSubParam(ty::Region<'tcx>, ty::ParamTy),
     RegionSubProjection(ty::Region<'tcx>, ty::ProjectionTy<'tcx>),
@@ -52,7 +52,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
     /// - `ty`, the type that we are supposed to assume is WF.
     /// - `span`, a span to use when normalizing, hopefully not important,
     ///   might be useful if a `bug!` occurs.
-    pub fn implied_outlives_bounds(
+    pub(crate) fn implied_outlives_bounds(
         &self,
         param_env: ty::ParamEnv<'tcx>,
         body_id: ast::NodeId,
@@ -194,7 +194,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
     }
 }
 
-pub fn explicit_outlives_bounds<'tcx>(
+pub(crate) fn explicit_outlives_bounds<'tcx>(
     param_env: ty::ParamEnv<'tcx>,
 ) -> impl Iterator<Item = OutlivesBound<'tcx>> + 'tcx {
     debug!("explicit_outlives_bounds()");

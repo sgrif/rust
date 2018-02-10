@@ -37,7 +37,7 @@ use ty::TyVar;
 use ty::{self, Ty};
 use ty::relate::{RelateResult, TypeRelation};
 
-pub trait LatticeDir<'f, 'gcx: 'f+'tcx, 'tcx: 'f> : TypeRelation<'f, 'gcx, 'tcx> {
+pub(crate) trait LatticeDir<'f, 'gcx: 'f+'tcx, 'tcx: 'f> : TypeRelation<'f, 'gcx, 'tcx> {
     fn infcx(&self) -> &'f InferCtxt<'f, 'gcx, 'tcx>;
 
     fn cause(&self) -> &ObligationCause<'tcx>;
@@ -51,7 +51,7 @@ pub trait LatticeDir<'f, 'gcx: 'f+'tcx, 'tcx: 'f> : TypeRelation<'f, 'gcx, 'tcx>
     fn relate_bound(&mut self, v: Ty<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>) -> RelateResult<'tcx, ()>;
 }
 
-pub fn super_lattice_tys<'a, 'gcx, 'tcx, L>(this: &mut L,
+pub(crate) fn super_lattice_tys<'a, 'gcx, 'tcx, L>(this: &mut L,
                                             a: Ty<'tcx>,
                                             b: Ty<'tcx>)
                                             -> RelateResult<'tcx, Ty<'tcx>>

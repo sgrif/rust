@@ -10,7 +10,7 @@
 
 #![allow(non_camel_case_types)]
 
-pub use self::FileMatch::*;
+pub(crate) use self::FileMatch::*;
 
 use std::borrow::Cow;
 use std::collections::HashSet;
@@ -22,22 +22,22 @@ use session::search_paths::{SearchPaths, PathKind};
 use util::fs as rustcfs;
 
 #[derive(Copy, Clone)]
-pub enum FileMatch {
+pub(crate) enum FileMatch {
     FileMatches,
     FileDoesntMatch,
 }
 
 // A module for searching for libraries
 
-pub struct FileSearch<'a> {
-    pub sysroot: &'a Path,
-    pub search_paths: &'a SearchPaths,
-    pub triple: &'a str,
-    pub kind: PathKind,
+pub(crate) struct FileSearch<'a> {
+    pub(crate) sysroot: &'a Path,
+    pub(crate) search_paths: &'a SearchPaths,
+    pub(crate) triple: &'a str,
+    pub(crate) kind: PathKind,
 }
 
 impl<'a> FileSearch<'a> {
-    pub fn for_each_lib_search_path<F>(&self, mut f: F) where
+    pub(crate) fn for_each_lib_search_path<F>(&self, mut f: F) where
         F: FnMut(&Path, PathKind)
     {
         let mut visited_dirs = HashSet::new();
@@ -57,11 +57,11 @@ impl<'a> FileSearch<'a> {
         visited_dirs.insert(tlib_path);
     }
 
-    pub fn get_lib_path(&self) -> PathBuf {
+    pub(crate) fn get_lib_path(&self) -> PathBuf {
         make_target_lib_path(self.sysroot, self.triple)
     }
 
-    pub fn search<F>(&self, mut pick: F)
+    pub(crate) fn search<F>(&self, mut pick: F)
         where F: FnMut(&Path, PathKind) -> FileMatch
     {
         self.for_each_lib_search_path(|lib_search_path, kind| {
@@ -96,7 +96,7 @@ impl<'a> FileSearch<'a> {
         });
     }
 
-    pub fn new(sysroot: &'a Path,
+    pub(crate) fn new(sysroot: &'a Path,
                triple: &'a str,
                search_paths: &'a SearchPaths,
                kind: PathKind) -> FileSearch<'a> {
@@ -110,7 +110,7 @@ impl<'a> FileSearch<'a> {
     }
 
     // Returns a list of directories where target-specific dylibs might be located.
-    pub fn get_dylib_search_paths(&self) -> Vec<PathBuf> {
+    pub(crate) fn get_dylib_search_paths(&self) -> Vec<PathBuf> {
         let mut paths = Vec::new();
         self.for_each_lib_search_path(|lib_search_path, _| {
             paths.push(lib_search_path.to_path_buf());
@@ -119,7 +119,7 @@ impl<'a> FileSearch<'a> {
     }
 
     // Returns a list of directories where target-specific tool binaries are located.
-    pub fn get_tools_search_paths(&self) -> Vec<PathBuf> {
+    pub(crate) fn get_tools_search_paths(&self) -> Vec<PathBuf> {
         let mut p = PathBuf::from(self.sysroot);
         p.push(find_libdir(self.sysroot).as_ref());
         p.push(RUST_LIB_DIR);
@@ -129,7 +129,7 @@ impl<'a> FileSearch<'a> {
     }
 }
 
-pub fn relative_target_lib_path(sysroot: &Path, target_triple: &str) -> PathBuf {
+pub(crate) fn relative_target_lib_path(sysroot: &Path, target_triple: &str) -> PathBuf {
     let mut p = PathBuf::from(find_libdir(sysroot).as_ref());
     assert!(p.is_relative());
     p.push(RUST_LIB_DIR);
@@ -143,7 +143,7 @@ fn make_target_lib_path(sysroot: &Path,
     sysroot.join(&relative_target_lib_path(sysroot, target_triple))
 }
 
-pub fn get_or_default_sysroot() -> PathBuf {
+pub(crate) fn get_or_default_sysroot() -> PathBuf {
     // Follow symlinks.  If the resolved path is relative, make it absolute.
     fn canonicalize(path: Option<PathBuf>) -> Option<PathBuf> {
         path.and_then(|path| {

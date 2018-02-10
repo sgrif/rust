@@ -36,7 +36,7 @@ use rustc_data_structures::stable_hasher::{HashStable, StableHashingContextProvi
 use rustc_data_structures::accumulate_vec::AccumulateVec;
 use rustc_data_structures::fx::{FxHashSet, FxHashMap};
 
-pub fn compute_ignored_attr_names() -> FxHashSet<Symbol> {
+pub(crate) fn compute_ignored_attr_names() -> FxHashSet<Symbol> {
     debug_assert!(ich::IGNORED_ATTRIBUTES.len() > 0);
     ich::IGNORED_ATTRIBUTES.iter().map(|&s| Symbol::intern(s)).collect()
 }
@@ -62,7 +62,7 @@ pub struct StableHashingContext<'gcx> {
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub enum NodeIdHashingMode {
+pub(crate) enum NodeIdHashingMode {
     Ignore,
     HashDefPath,
 }
@@ -85,7 +85,7 @@ impl<'gcx> StableHashingContext<'gcx> {
     // The `krate` here is only used for mapping BodyIds to Bodies.
     // Don't use it for anything else or you'll run the risk of
     // leaking data out of the tracking system.
-    pub fn new(sess: &'gcx Session,
+    pub(crate) fn new(sess: &'gcx Session,
                krate: &'gcx hir::Crate,
                definitions: &'gcx Definitions,
                cstore: &'gcx CrateStore)
@@ -106,12 +106,12 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn sess(&self) -> &'gcx Session {
+    pub(crate) fn sess(&self) -> &'gcx Session {
         self.sess
     }
 
     #[inline]
-    pub fn while_hashing_hir_bodies<F: FnOnce(&mut Self)>(&mut self,
+    pub(crate) fn while_hashing_hir_bodies<F: FnOnce(&mut Self)>(&mut self,
                                                           hash_bodies: bool,
                                                           f: F) {
         let prev_hash_bodies = self.hash_bodies;
@@ -121,7 +121,7 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn while_hashing_spans<F: FnOnce(&mut Self)>(&mut self,
+    pub(crate) fn while_hashing_spans<F: FnOnce(&mut Self)>(&mut self,
                                                      hash_spans: bool,
                                                      f: F) {
         let prev_hash_spans = self.hash_spans;
@@ -131,7 +131,7 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn with_node_id_hashing_mode<F: FnOnce(&mut Self)>(&mut self,
+    pub(crate) fn with_node_id_hashing_mode<F: FnOnce(&mut Self)>(&mut self,
                                                            mode: NodeIdHashingMode,
                                                            f: F) {
         let prev = self.node_id_hashing_mode;
@@ -141,7 +141,7 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn def_path_hash(&self, def_id: DefId) -> DefPathHash {
+    pub(crate) fn def_path_hash(&self, def_id: DefId) -> DefPathHash {
         if def_id.is_local() {
             self.definitions.def_path_hash(def_id.index)
         } else {
@@ -150,22 +150,22 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn local_def_path_hash(&self, def_index: DefIndex) -> DefPathHash {
+    pub(crate) fn local_def_path_hash(&self, def_index: DefIndex) -> DefPathHash {
         self.definitions.def_path_hash(def_index)
     }
 
     #[inline]
-    pub fn node_to_hir_id(&self, node_id: ast::NodeId) -> hir::HirId {
+    pub(crate) fn node_to_hir_id(&self, node_id: ast::NodeId) -> hir::HirId {
         self.definitions.node_to_hir_id(node_id)
     }
 
     #[inline]
-    pub fn hash_bodies(&self) -> bool {
+    pub(crate) fn hash_bodies(&self) -> bool {
         self.hash_bodies
     }
 
     #[inline]
-    pub fn codemap(&mut self) -> &mut CachingCodemapView<'gcx> {
+    pub(crate) fn codemap(&mut self) -> &mut CachingCodemapView<'gcx> {
         match self.caching_codemap {
             Some(ref mut cm) => {
                 cm
@@ -178,11 +178,11 @@ impl<'gcx> StableHashingContext<'gcx> {
     }
 
     #[inline]
-    pub fn is_ignored_attr(&self, name: Symbol) -> bool {
+    pub(crate) fn is_ignored_attr(&self, name: Symbol) -> bool {
         self.sess.ignored_attr_names.contains(&name)
     }
 
-    pub fn hash_hir_item_like<F: FnOnce(&mut Self)>(&mut self, f: F) {
+    pub(crate) fn hash_hir_item_like<F: FnOnce(&mut Self)>(&mut self, f: F) {
         let prev_hash_node_ids = self.node_id_hashing_mode;
         self.node_id_hashing_mode = NodeIdHashingMode::Ignore;
 
@@ -373,7 +373,7 @@ impl<'gcx> HashStable<StableHashingContext<'gcx>> for Span {
     }
 }
 
-pub fn hash_stable_trait_impls<'gcx, W, R>(
+pub(crate) fn hash_stable_trait_impls<'gcx, W, R>(
     hcx: &mut StableHashingContext<'gcx>,
     hasher: &mut StableHasher<W>,
     blanket_impls: &Vec<DefId>,

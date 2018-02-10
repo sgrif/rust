@@ -19,13 +19,13 @@ use ty::subst::Substs;
 use ty::relate::{self, Relate, RelateResult, TypeRelation};
 
 /// Ensures `a` is made equal to `b`. Returns `a` on success.
-pub struct Equate<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
+pub(crate) struct Equate<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
     fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>,
     a_is_expected: bool,
 }
 
 impl<'combine, 'infcx, 'gcx, 'tcx> Equate<'combine, 'infcx, 'gcx, 'tcx> {
-    pub fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
+    pub(crate) fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
         -> Equate<'combine, 'infcx, 'gcx, 'tcx>
     {
         Equate { fields: fields, a_is_expected: a_is_expected }

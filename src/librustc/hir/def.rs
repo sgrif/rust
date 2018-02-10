@@ -133,7 +133,7 @@ pub struct Export {
     pub span: Span,
     /// The visibility of the export.
     /// We include non-`pub` exports for hygienic macros that get used from extern crates.
-    pub vis: ty::Visibility,
+    pub(crate) vis: ty::Visibility,
     /// True if from a `use` or and `extern crate`.
     /// Used in rustdoc.
     pub is_import: bool,

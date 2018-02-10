@@ -644,7 +644,7 @@ impl<'a, 'tcx> Visitor<'tcx> for DeadVisitor<'a, 'tcx> {
     }
 }
 
-pub fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub(crate) fn check_crate<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
     let access_levels = &tcx.privacy_access_levels(LOCAL_CRATE);
     let krate = tcx.hir.krate();
     let live_symbols = find_live(tcx, access_levels, krate);

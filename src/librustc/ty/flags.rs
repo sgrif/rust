@@ -13,11 +13,11 @@ use ty::subst::Substs;
 use ty::{self, Ty, TypeFlags, TypeFoldable};
 
 #[derive(Debug)]
-pub struct FlagComputation {
-    pub flags: TypeFlags,
+pub(crate) struct FlagComputation {
+    pub(crate) flags: TypeFlags,
 
     // maximum depth of any bound region that we have seen thus far
-    pub depth: u32,
+    pub(crate) depth: u32,
 }
 
 impl FlagComputation {
@@ -25,7 +25,7 @@ impl FlagComputation {
         FlagComputation { flags: TypeFlags::empty(), depth: 0 }
     }
 
-    pub fn for_sty(st: &ty::TypeVariants) -> FlagComputation {
+    pub(crate) fn for_sty(st: &ty::TypeVariants) -> FlagComputation {
         let mut result = FlagComputation::new();
         result.add_sty(st);
         result

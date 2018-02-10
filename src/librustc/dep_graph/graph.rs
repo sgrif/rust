@@ -31,7 +31,7 @@ use super::serialized::{SerializedDepGraph, SerializedDepNodeIndex};
 use super::prev::PreviousDepGraph;
 
 #[derive(Clone)]
-pub struct DepGraph {
+pub(crate) struct DepGraph {
     data: Option<Rc<DepGraphData>>,
 
     // A vector mapping depnodes from the current graph to their associated
@@ -49,13 +49,13 @@ impl DepNodeIndex {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum DepNodeColor {
+pub(crate) enum DepNodeColor {
     Red,
     Green(DepNodeIndex)
 }
 
 impl DepNodeColor {
-    pub fn is_green(self) -> bool {
+    pub(crate) fn is_green(self) -> bool {
         match self {
             DepNodeColor::Red => false,
             DepNodeColor::Green(_) => true,
@@ -93,7 +93,7 @@ struct DepGraphData {
 
 impl DepGraph {
 
-    pub fn new(prev_graph: PreviousDepGraph) -> DepGraph {
+    pub(crate) fn new(prev_graph: PreviousDepGraph) -> DepGraph {
         // Pre-allocate the fingerprints array. We over-allocate a little so
         // that we hopefully don't have to re-allocate during this compilation
         // session.
@@ -113,7 +113,7 @@ impl DepGraph {
         }
     }
 
-    pub fn new_disabled() -> DepGraph {
+    pub(crate) fn new_disabled() -> DepGraph {
         DepGraph {
             data: None,
             fingerprints: Rc::new(RefCell::new(IndexVec::new())),
@@ -122,11 +122,11 @@ impl DepGraph {
 
     /// True if we are actually building the full dep-graph.
     #[inline]
-    pub fn is_fully_enabled(&self) -> bool {
+    pub(crate) fn is_fully_enabled(&self) -> bool {
         self.data.is_some()
     }
 
-    pub fn query(&self) -> DepGraphQuery {
+    pub(crate) fn query(&self) -> DepGraphQuery {
         let current_dep_graph = self.data.as_ref().unwrap().current.borrow();
         let nodes: Vec<_> = current_dep_graph.nodes.iter().cloned().collect();
         let mut edges = Vec::new();
@@ -141,7 +141,7 @@ impl DepGraph {
         DepGraphQuery::new(&nodes[..], &edges[..])
     }
 
-    pub fn assert_ignored(&self)
+    pub(crate) fn assert_ignored(&self)
     {
         if let Some(ref data) = self.data {
             match data.current.borrow().task_stack.last() {
@@ -153,7 +153,7 @@ impl DepGraph {
         }
     }
 
-    pub fn with_ignore<OP,R>(&self, op: OP) -> R
+    pub(crate) fn with_ignore<OP,R>(&self, op: OP) -> R
         where OP: FnOnce() -> R
     {
         let _task = self.data.as_ref().map(|data| raii::IgnoreTask::new(&data.current));
@@ -187,7 +187,7 @@ impl DepGraph {
     ///   `arg` parameter.
     ///
     /// [README]: https://github.com/rust-lang/rust/blob/master/src/librustc/dep_graph/README.md
-    pub fn with_task<C, A, R, HCX>(&self,
+    pub(crate) fn with_task<C, A, R, HCX>(&self,
                                    key: DepNode,
                                    cx: C,
                                    arg: A,
@@ -293,7 +293,7 @@ impl DepGraph {
 
     /// Execute something within an "anonymous" task, that is, a task the
     /// DepNode of which is determined by the list of inputs it read from.
-    pub fn with_anon_task<OP,R>(&self, dep_kind: DepKind, op: OP) -> (R, DepNodeIndex)
+    pub(crate) fn with_anon_task<OP,R>(&self, dep_kind: DepKind, op: OP) -> (R, DepNodeIndex)
         where OP: FnOnce() -> R
     {
         if let Some(ref data) = self.data {
@@ -310,7 +310,7 @@ impl DepGraph {
 
     /// Execute something within an "eval-always" task which is a task
     // that runs whenever anything changes.
-    pub fn with_eval_always_task<C, A, R, HCX>(&self,
+    pub(crate) fn with_eval_always_task<C, A, R, HCX>(&self,
                                    key: DepNode,
                                    cx: C,
                                    arg: A,
@@ -325,7 +325,7 @@ impl DepGraph {
     }
 
     #[inline]
-    pub fn read(&self, v: DepNode) {
+    pub(crate) fn read(&self, v: DepNode) {
         if let Some(ref data) = self.data {
             let mut current = data.current.borrow_mut();
             if let Some(&dep_node_index) = current.node_to_node_index.get(&v) {
@@ -337,14 +337,14 @@ impl DepGraph {
     }
 
     #[inline]
-    pub fn read_index(&self, dep_node_index: DepNodeIndex) {
+    pub(crate) fn read_index(&self, dep_node_index: DepNodeIndex) {
         if let Some(ref data) = self.data {
             data.current.borrow_mut().read_index(dep_node_index);
         }
     }
 
     #[inline]
-    pub fn dep_node_index_of(&self, dep_node: &DepNode) -> DepNodeIndex {
+    pub(crate) fn dep_node_index_of(&self, dep_node: &DepNode) -> DepNodeIndex {
         self.data
             .as_ref()
             .unwrap()
@@ -357,7 +357,7 @@ impl DepGraph {
     }
 
     #[inline]
-    pub fn fingerprint_of(&self, dep_node_index: DepNodeIndex) -> Fingerprint {
+    pub(crate) fn fingerprint_of(&self, dep_node_index: DepNodeIndex) -> Fingerprint {
         match self.fingerprints.borrow().get(dep_node_index) {
             Some(&fingerprint) => fingerprint,
             None => {
@@ -371,19 +371,19 @@ impl DepGraph {
         }
     }
 
-    pub fn prev_fingerprint_of(&self, dep_node: &DepNode) -> Option<Fingerprint> {
+    pub(crate) fn prev_fingerprint_of(&self, dep_node: &DepNode) -> Option<Fingerprint> {
         self.data.as_ref().unwrap().previous.fingerprint_of(dep_node)
     }
 
     #[inline]
-    pub fn prev_dep_node_index_of(&self, dep_node: &DepNode) -> SerializedDepNodeIndex {
+    pub(crate) fn prev_dep_node_index_of(&self, dep_node: &DepNode) -> SerializedDepNodeIndex {
         self.data.as_ref().unwrap().previous.node_to_index(dep_node)
     }
 
     /// Indicates that a previous work product exists for `v`. This is
     /// invoked during initial start-up based on what nodes are clean
     /// (and what files exist in the incr. directory).
-    pub fn insert_previous_work_product(&self, v: &WorkProductId, data: WorkProduct) {
+    pub(crate) fn insert_previous_work_product(&self, v: &WorkProductId, data: WorkProduct) {
         debug!("insert_previous_work_product({:?}, {:?})", v, data);
         self.data
             .as_ref()
@@ -396,7 +396,7 @@ impl DepGraph {
     /// Indicates that we created the given work-product in this run
     /// for `v`. This record will be preserved and loaded in the next
     /// run.
-    pub fn insert_work_product(&self, v: &WorkProductId, data: WorkProduct) {
+    pub(crate) fn insert_work_product(&self, v: &WorkProductId, data: WorkProduct) {
         debug!("insert_work_product({:?}, {:?})", v, data);
         self.data
             .as_ref()
@@ -408,7 +408,7 @@ impl DepGraph {
 
     /// Check whether a previous work product exists for `v` and, if
     /// so, return the path that leads to it. Used to skip doing work.
-    pub fn previous_work_product(&self, v: &WorkProductId) -> Option<WorkProduct> {
+    pub(crate) fn previous_work_product(&self, v: &WorkProductId) -> Option<WorkProduct> {
         self.data
             .as_ref()
             .and_then(|data| {
@@ -418,18 +418,18 @@ impl DepGraph {
 
     /// Access the map of work-products created during this run. Only
     /// used during saving of the dep-graph.
-    pub fn work_products(&self) -> Ref<FxHashMap<WorkProductId, WorkProduct>> {
+    pub(crate) fn work_products(&self) -> Ref<FxHashMap<WorkProductId, WorkProduct>> {
         self.data.as_ref().unwrap().work_products.borrow()
     }
 
     /// Access the map of work-products created during the cached run. Only
     /// used during saving of the dep-graph.
-    pub fn previous_work_products(&self) -> Ref<FxHashMap<WorkProductId, WorkProduct>> {
+    pub(crate) fn previous_work_products(&self) -> Ref<FxHashMap<WorkProductId, WorkProduct>> {
         self.data.as_ref().unwrap().previous_work_products.borrow()
     }
 
     #[inline(always)]
-    pub fn register_dep_node_debug_str<F>(&self,
+    pub(crate) fn register_dep_node_debug_str<F>(&self,
                                           dep_node: DepNode,
                                           debug_str_gen: F)
         where F: FnOnce() -> String
@@ -447,13 +447,13 @@ impl DepGraph {
         self.data.as_ref().and_then(|t| t.dep_node_debug.borrow().get(&dep_node).cloned())
     }
 
-    pub fn edge_deduplication_data(&self) -> (u64, u64) {
+    pub(crate) fn edge_deduplication_data(&self) -> (u64, u64) {
         let current_dep_graph = self.data.as_ref().unwrap().current.borrow();
 
         (current_dep_graph.total_read_count, current_dep_graph.total_duplicate_read_count)
     }
 
-    pub fn serialize(&self) -> SerializedDepGraph {
+    pub(crate) fn serialize(&self) -> SerializedDepGraph {
         let mut fingerprints = self.fingerprints.borrow_mut();
         let current_dep_graph = self.data.as_ref().unwrap().current.borrow();
 
@@ -494,11 +494,11 @@ impl DepGraph {
         }
     }
 
-    pub fn node_color(&self, dep_node: &DepNode) -> Option<DepNodeColor> {
+    pub(crate) fn node_color(&self, dep_node: &DepNode) -> Option<DepNodeColor> {
         self.data.as_ref().and_then(|data| data.colors.borrow().get(dep_node).cloned())
     }
 
-    pub fn try_mark_green<'tcx>(&self,
+    pub(crate) fn try_mark_green<'tcx>(&self,
                                 tcx: TyCtxt<'_, 'tcx, 'tcx>,
                                 dep_node: &DepNode)
                                 -> Option<DepNodeIndex> {
@@ -693,7 +693,7 @@ impl DepGraph {
     }
 
     // Used in various assertions
-    pub fn is_green(&self, dep_node_index: DepNodeIndex) -> bool {
+    pub(crate) fn is_green(&self, dep_node_index: DepNodeIndex) -> bool {
         let dep_node = self.data.as_ref().unwrap().current.borrow().nodes[dep_node_index];
         self.data.as_ref().unwrap().colors.borrow().get(&dep_node).map(|&color| {
             match color {
@@ -711,7 +711,7 @@ impl DepGraph {
     //
     // This method will only load queries that will end up in the disk cache.
     // Other queries will not be executed.
-    pub fn exec_cache_promotions<'a, 'tcx>(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+    pub(crate) fn exec_cache_promotions<'a, 'tcx>(&self, tcx: TyCtxt<'a, 'tcx, 'tcx>) {
         let green_nodes: Vec<DepNode> = {
             let data = self.data.as_ref().unwrap();
             data.colors.borrow().iter().filter_map(|(dep_node, color)| match color {
@@ -736,7 +736,7 @@ impl DepGraph {
         }
     }
 
-    pub fn mark_loaded_from_cache(&self, dep_node_index: DepNodeIndex, state: bool) {
+    pub(crate) fn mark_loaded_from_cache(&self, dep_node_index: DepNodeIndex, state: bool) {
         debug!("mark_loaded_from_cache({:?}, {})",
                self.data.as_ref().unwrap().current.borrow().nodes[dep_node_index],
                state);
@@ -749,7 +749,7 @@ impl DepGraph {
             .insert(dep_node_index, state);
     }
 
-    pub fn was_loaded_from_cache(&self, dep_node: &DepNode) -> Option<bool> {
+    pub(crate) fn was_loaded_from_cache(&self, dep_node: &DepNode) -> Option<bool> {
         let data = self.data.as_ref().unwrap();
         let dep_node_index = data.current.borrow().node_to_node_index[dep_node];
         data.loaded_from_cache.borrow().get(&dep_node_index).cloned()
@@ -788,14 +788,14 @@ impl DepGraph {
 /// nothing in P changed!). We will compare that hash against the
 /// previous hash. If it matches up, we can reuse the object file.
 #[derive(Clone, Debug, RustcEncodable, RustcDecodable)]
-pub struct WorkProduct {
-    pub cgu_name: String,
+pub(crate) struct WorkProduct {
+    pub(crate) cgu_name: String,
     /// Saved files associated with this CGU
-    pub saved_files: Vec<(WorkProductFileKind, String)>,
+    pub(crate) saved_files: Vec<(WorkProductFileKind, String)>,
 }
 
 #[derive(Clone, Copy, Debug, RustcEncodable, RustcDecodable)]
-pub enum WorkProductFileKind {
+pub(crate) enum WorkProductFileKind {
     Object,
     Bytecode,
     BytecodeCompressed,

@@ -12,10 +12,10 @@
 //! normal visitor, which just walks the entire body in one shot, the
 //! `ExprUseVisitor` determines how expressions are being used.
 
-pub use self::LoanCause::*;
-pub use self::ConsumeMode::*;
-pub use self::MoveReason::*;
-pub use self::MatchMode::*;
+pub(crate) use self::LoanCause::*;
+pub(crate) use self::ConsumeMode::*;
+pub(crate) use self::MoveReason::*;
+pub(crate) use self::MatchMode::*;
 use self::TrackMatchMode::*;
 use self::OverloadedCallType::*;
 
@@ -38,7 +38,7 @@ use util::nodemap::ItemLocalSet;
 
 /// This trait defines the callbacks you can expect to receive when
 /// employing the ExprUseVisitor.
-pub trait Delegate<'tcx> {
+pub(crate) trait Delegate<'tcx> {
     // The value found at `cmt` is either copied or moved, depending
     // on mode.
     fn consume(&mut self,
@@ -95,7 +95,7 @@ pub trait Delegate<'tcx> {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum LoanCause {
+pub(crate) enum LoanCause {
     ClosureCapture(Span),
     AddrOf,
     AutoRef,
@@ -108,20 +108,20 @@ pub enum LoanCause {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum ConsumeMode {
+pub(crate) enum ConsumeMode {
     Copy,                // reference to x where x has a type that copies
     Move(MoveReason),    // reference to x where x has a type that moves
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum MoveReason {
+pub(crate) enum MoveReason {
     DirectRefMove,
     PatBindingMove,
     CaptureMove,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum MatchMode {
+pub(crate) enum MatchMode {
     NonBindingMatch,
     BorrowingMatch,
     CopyingMatch,
@@ -196,7 +196,7 @@ impl TrackMatchMode {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum MutateMode {
+pub(crate) enum MutateMode {
     Init,
     JustWrite,    // x = y
     WriteAndRead, // x += y
@@ -237,7 +237,7 @@ impl OverloadedCallType {
 // The ExprUseVisitor type
 //
 // This is the code that actually walks the tree.
-pub struct ExprUseVisitor<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
+pub(crate) struct ExprUseVisitor<'a, 'gcx: 'a+'tcx, 'tcx: 'a> {
     mc: mc::MemCategorizationContext<'a, 'gcx, 'tcx>,
     delegate: &'a mut Delegate<'tcx>,
     param_env: ty::ParamEnv<'tcx>,
@@ -274,7 +274,7 @@ impl<'a, 'tcx> ExprUseVisitor<'a, 'tcx, 'tcx> {
     ///   `None` means that rvalues will be given more conservative lifetimes.
     ///
     /// See also `with_infer`, which is used *during* typeck.
-    pub fn new(delegate: &'a mut (Delegate<'tcx>+'a),
+    pub(crate) fn new(delegate: &'a mut (Delegate<'tcx>+'a),
                tcx: TyCtxt<'a, 'tcx, 'tcx>,
                param_env: ty::ParamEnv<'tcx>,
                region_scope_tree: &'a region::ScopeTree,
@@ -294,7 +294,7 @@ impl<'a, 'tcx> ExprUseVisitor<'a, 'tcx, 'tcx> {
 }
 
 impl<'a, 'gcx, 'tcx> ExprUseVisitor<'a, 'gcx, 'tcx> {
-    pub fn with_infer(delegate: &'a mut (Delegate<'tcx>+'a),
+    pub(crate) fn with_infer(delegate: &'a mut (Delegate<'tcx>+'a),
                       infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
                       param_env: ty::ParamEnv<'tcx>,
                       region_scope_tree: &'a region::ScopeTree,
@@ -308,7 +308,7 @@ impl<'a, 'gcx, 'tcx> ExprUseVisitor<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn consume_body(&mut self, body: &hir::Body) {
+    pub(crate) fn consume_body(&mut self, body: &hir::Body) {
         debug!("consume_body(body={:?})", body);
 
         for arg in &body.arguments {
@@ -349,7 +349,7 @@ impl<'a, 'gcx, 'tcx> ExprUseVisitor<'a, 'gcx, 'tcx> {
         }
     }
 
-    pub fn consume_expr(&mut self, expr: &hir::Expr) {
+    pub(crate) fn consume_expr(&mut self, expr: &hir::Expr) {
         debug!("consume_expr(expr={:?})", expr);
 
         let cmt = return_if_err!(self.mc.cat_expr(expr));
@@ -384,7 +384,7 @@ impl<'a, 'gcx, 'tcx> ExprUseVisitor<'a, 'gcx, 'tcx> {
         self.walk_expr(expr)
     }
 
-    pub fn walk_expr(&mut self, expr: &hir::Expr) {
+    pub(crate) fn walk_expr(&mut self, expr: &hir::Expr) {
         debug!("walk_expr(expr={:?})", expr);
 
         self.walk_adjustment(expr);

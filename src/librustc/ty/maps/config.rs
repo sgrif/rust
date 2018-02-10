@@ -19,7 +19,7 @@ use syntax_pos::symbol::InternedString;
 
 /// Query configuration and description traits.
 
-pub trait QueryConfig {
+pub(crate) trait QueryConfig {
     type Key: Eq + Hash + Clone;
     type Value;
 }

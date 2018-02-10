@@ -16,26 +16,26 @@ use rustc_data_structures::fx::{FxHashSet};
 use std::cmp::{self, Ordering};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct VariantInfo {
-    pub name: Option<String>,
-    pub kind: SizeKind,
-    pub size: u64,
-    pub align: u64,
-    pub fields: Vec<FieldInfo>,
+pub(crate) struct VariantInfo {
+    pub(crate) name: Option<String>,
+    pub(crate) kind: SizeKind,
+    pub(crate) size: u64,
+    pub(crate) align: u64,
+    pub(crate) fields: Vec<FieldInfo>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum SizeKind {
+pub(crate) enum SizeKind {
     Exact,
     Min,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct FieldInfo {
-    pub name: String,
-    pub offset: u64,
-    pub size: u64,
-    pub align: u64,
+pub(crate) struct FieldInfo {
+    pub(crate) name: String,
+    pub(crate) offset: u64,
+    pub(crate) size: u64,
+    pub(crate) align: u64,
 }
 
 impl From<AdtKind> for DataTypeKind {
@@ -49,7 +49,7 @@ impl From<AdtKind> for DataTypeKind {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum DataTypeKind {
+pub(crate) enum DataTypeKind {
     Struct,
     Union,
     Enum,
@@ -57,24 +57,24 @@ pub enum DataTypeKind {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct TypeSizeInfo {
-    pub kind: DataTypeKind,
-    pub type_description: String,
-    pub align: u64,
-    pub overall_size: u64,
-    pub opt_discr_size: Option<u64>,
-    pub variants: Vec<VariantInfo>,
+pub(crate) struct TypeSizeInfo {
+    pub(crate) kind: DataTypeKind,
+    pub(crate) type_description: String,
+    pub(crate) align: u64,
+    pub(crate) overall_size: u64,
+    pub(crate) opt_discr_size: Option<u64>,
+    pub(crate) variants: Vec<VariantInfo>,
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct CodeStats {
+pub(crate) struct CodeStats {
     type_sizes: FxHashSet<TypeSizeInfo>,
 }
 
 impl CodeStats {
-    pub fn new() -> Self { CodeStats { type_sizes: FxHashSet() } }
+    pub(crate) fn new() -> Self { CodeStats { type_sizes: FxHashSet() } }
 
-    pub fn record_type_size<S: ToString>(&mut self,
+    pub(crate) fn record_type_size<S: ToString>(&mut self,
                                          kind: DataTypeKind,
                                          type_desc: S,
                                          align: Align,
@@ -92,7 +92,7 @@ impl CodeStats {
         self.type_sizes.insert(info);
     }
 
-    pub fn print_type_sizes(&self) {
+    pub(crate) fn print_type_sizes(&self) {
         let mut sorted: Vec<_> = self.type_sizes.iter().collect();
 
         // Primary sort: large-to-small.

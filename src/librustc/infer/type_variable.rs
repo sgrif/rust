@@ -22,7 +22,7 @@ use rustc_data_structures::fx::FxHashMap;
 use rustc_data_structures::snapshot_vec as sv;
 use rustc_data_structures::unify as ut;
 
-pub struct TypeVariableTable<'tcx> {
+pub(crate) struct TypeVariableTable<'tcx> {
     values: sv::SnapshotVec<Delegate<'tcx>>,
 
     /// Two variables are unified in `eq_relations` when we have a
@@ -51,7 +51,7 @@ pub struct TypeVariableTable<'tcx> {
 
 /// Reasons to create a type inference variable
 #[derive(Copy, Clone, Debug)]
-pub enum TypeVariableOrigin {
+pub(crate) enum TypeVariableOrigin {
     MiscVariable(Span),
     NormalizeProjectionType(Span),
     TypeInference(Span),
@@ -70,7 +70,7 @@ pub enum TypeVariableOrigin {
     Generalized(ty::TyVid),
 }
 
-pub type TypeVariableMap = FxHashMap<ty::TyVid, TypeVariableOrigin>;
+pub(crate) type TypeVariableMap = FxHashMap<ty::TyVid, TypeVariableOrigin>;
 
 struct TypeVariableData<'tcx> {
     value: TypeVariableValue<'tcx>,
@@ -88,15 +88,15 @@ enum TypeVariableValue<'tcx> {
 // We will use this to store the required information to recapitulate what happened when
 // an error occurs.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Default<'tcx> {
-    pub ty: Ty<'tcx>,
+pub(crate) struct Default<'tcx> {
+    pub(crate) ty: Ty<'tcx>,
     /// The span where the default was incurred
-    pub origin_span: Span,
+    pub(crate) origin_span: Span,
     /// The definition that the default originates from
-    pub def_id: DefId
+    pub(crate) def_id: DefId
 }
 
-pub struct Snapshot {
+pub(crate) struct Snapshot {
     snapshot: sv::Snapshot,
     eq_snapshot: ut::Snapshot<ty::TyVid>,
     sub_snapshot: ut::Snapshot<ty::TyVid>,
@@ -110,7 +110,7 @@ struct Instantiate<'tcx> {
 struct Delegate<'tcx>(PhantomData<&'tcx ()>);
 
 impl<'tcx> TypeVariableTable<'tcx> {
-    pub fn new() -> TypeVariableTable<'tcx> {
+    pub(crate) fn new() -> TypeVariableTable<'tcx> {
         TypeVariableTable {
             values: sv::SnapshotVec::new(),
             eq_relations: ut::UnificationTable::new(),
@@ -118,25 +118,25 @@ impl<'tcx> TypeVariableTable<'tcx> {
         }
     }
 
-    pub fn default(&self, vid: ty::TyVid) -> Option<Default<'tcx>> {
+    pub(crate) fn default(&self, vid: ty::TyVid) -> Option<Default<'tcx>> {
         match &self.values.get(vid.index as usize).value {
             &Known(_) => None,
             &Bounded { ref default, .. } => default.clone()
         }
     }
 
-    pub fn var_diverges<'a>(&'a self, vid: ty::TyVid) -> bool {
+    pub(crate) fn var_diverges<'a>(&'a self, vid: ty::TyVid) -> bool {
         self.values.get(vid.index as usize).diverging
     }
 
-    pub fn var_origin(&self, vid: ty::TyVid) -> &TypeVariableOrigin {
+    pub(crate) fn var_origin(&self, vid: ty::TyVid) -> &TypeVariableOrigin {
         &self.values.get(vid.index as usize).origin
     }
 
     /// Records that `a == b`, depending on `dir`.
     ///
     /// Precondition: neither `a` nor `b` are known.
-    pub fn equate(&mut self, a: ty::TyVid, b: ty::TyVid) {
+    pub(crate) fn equate(&mut self, a: ty::TyVid, b: ty::TyVid) {
         debug_assert!(self.probe(a).is_none());
         debug_assert!(self.probe(b).is_none());
         self.eq_relations.union(a, b);
@@ -146,7 +146,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
     /// Records that `a <: b`, depending on `dir`.
     ///
     /// Precondition: neither `a` nor `b` are known.
-    pub fn sub(&mut self, a: ty::TyVid, b: ty::TyVid) {
+    pub(crate) fn sub(&mut self, a: ty::TyVid, b: ty::TyVid) {
         debug_assert!(self.probe(a).is_none());
         debug_assert!(self.probe(b).is_none());
         self.sub_relations.union(a, b);
@@ -155,7 +155,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
     /// Instantiates `vid` with the type `ty`.
     ///
     /// Precondition: `vid` must not have been previously instantiated.
-    pub fn instantiate(&mut self, vid: ty::TyVid, ty: Ty<'tcx>) {
+    pub(crate) fn instantiate(&mut self, vid: ty::TyVid, ty: Ty<'tcx>) {
         let vid = self.root_var(vid);
         debug_assert!(self.probe_root(vid).is_none());
 
@@ -175,7 +175,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         }
     }
 
-    pub fn new_var(&mut self,
+    pub(crate) fn new_var(&mut self,
                    diverging: bool,
                    origin: TypeVariableOrigin,
                    default: Option<Default<'tcx>>,) -> ty::TyVid {
@@ -192,7 +192,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         v
     }
 
-    pub fn num_vars(&self) -> usize {
+    pub(crate) fn num_vars(&self) -> usize {
         self.values.len()
     }
 
@@ -201,7 +201,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
     /// will yield the same root variable (per the union-find
     /// algorithm), so `root_var(a) == root_var(b)` implies that `a ==
     /// b` (transitively).
-    pub fn root_var(&mut self, vid: ty::TyVid) -> ty::TyVid {
+    pub(crate) fn root_var(&mut self, vid: ty::TyVid) -> ty::TyVid {
         self.eq_relations.find(vid)
     }
 
@@ -212,27 +212,27 @@ impl<'tcx> TypeVariableTable<'tcx> {
     /// == sub_root_var(b)` implies that:
     ///
     ///     exists X. (a <: X || X <: a) && (b <: X || X <: b)
-    pub fn sub_root_var(&mut self, vid: ty::TyVid) -> ty::TyVid {
+    pub(crate) fn sub_root_var(&mut self, vid: ty::TyVid) -> ty::TyVid {
         self.sub_relations.find(vid)
     }
 
     /// True if `a` and `b` have same "sub-root" (i.e., exists some
     /// type X such that `forall i in {a, b}. (i <: X || X <: i)`.
-    pub fn sub_unified(&mut self, a: ty::TyVid, b: ty::TyVid) -> bool {
+    pub(crate) fn sub_unified(&mut self, a: ty::TyVid, b: ty::TyVid) -> bool {
         self.sub_root_var(a) == self.sub_root_var(b)
     }
 
-    pub fn probe(&mut self, vid: ty::TyVid) -> Option<Ty<'tcx>> {
+    pub(crate) fn probe(&mut self, vid: ty::TyVid) -> Option<Ty<'tcx>> {
         let vid = self.root_var(vid);
         self.probe_root(vid)
     }
 
-    pub fn origin(&self, vid: ty::TyVid) -> TypeVariableOrigin {
+    pub(crate) fn origin(&self, vid: ty::TyVid) -> TypeVariableOrigin {
         self.values.get(vid.index as usize).origin.clone()
     }
 
     /// Retrieves the type of `vid` given that it is currently a root in the unification table
-    pub fn probe_root(&mut self, vid: ty::TyVid) -> Option<Ty<'tcx>> {
+    pub(crate) fn probe_root(&mut self, vid: ty::TyVid) -> Option<Ty<'tcx>> {
         debug_assert!(self.root_var(vid) == vid);
         match self.values.get(vid.index as usize).value {
             Bounded { .. } => None,
@@ -240,7 +240,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         }
     }
 
-    pub fn replace_if_possible(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
+    pub(crate) fn replace_if_possible(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
         match t.sty {
             ty::TyInfer(ty::TyVar(v)) => {
                 match self.probe(v) {
@@ -252,7 +252,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         }
     }
 
-    pub fn snapshot(&mut self) -> Snapshot {
+    pub(crate) fn snapshot(&mut self) -> Snapshot {
         Snapshot {
             snapshot: self.values.start_snapshot(),
             eq_snapshot: self.eq_relations.snapshot(),
@@ -260,7 +260,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         }
     }
 
-    pub fn rollback_to(&mut self, s: Snapshot) {
+    pub(crate) fn rollback_to(&mut self, s: Snapshot) {
         debug!("rollback_to{:?}", {
             for action in self.values.actions_since_snapshot(&s.snapshot) {
                 match *action {
@@ -278,7 +278,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         self.sub_relations.rollback_to(sub_snapshot);
     }
 
-    pub fn commit(&mut self, s: Snapshot) {
+    pub(crate) fn commit(&mut self, s: Snapshot) {
         let Snapshot { snapshot, eq_snapshot, sub_snapshot } = s;
         self.values.commit(snapshot);
         self.eq_relations.commit(eq_snapshot);
@@ -289,7 +289,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
     /// ty-variables created during the snapshot, and the values
     /// `{V2}` are the root variables that they were unified with,
     /// along with their origin.
-    pub fn types_created_since_snapshot(&mut self, s: &Snapshot) -> TypeVariableMap {
+    pub(crate) fn types_created_since_snapshot(&mut self, s: &Snapshot) -> TypeVariableMap {
         let actions_since_snapshot = self.values.actions_since_snapshot(&s.snapshot);
 
         actions_since_snapshot
@@ -305,7 +305,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
             .collect()
     }
 
-    pub fn types_escaping_snapshot(&mut self, s: &Snapshot) -> Vec<Ty<'tcx>> {
+    pub(crate) fn types_escaping_snapshot(&mut self, s: &Snapshot) -> Vec<Ty<'tcx>> {
         /*!
          * Find the set of type variables that existed *before* `s`
          * but which have only been unified since `s` started, and
@@ -351,7 +351,7 @@ impl<'tcx> TypeVariableTable<'tcx> {
         escaping_types
     }
 
-    pub fn unsolved_variables(&mut self) -> Vec<ty::TyVid> {
+    pub(crate) fn unsolved_variables(&mut self) -> Vec<ty::TyVid> {
         (0..self.values.len())
             .filter_map(|i| {
                 let vid = ty::TyVid { index: i as u32 };

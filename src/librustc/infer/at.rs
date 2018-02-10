@@ -39,20 +39,20 @@ use super::*;
 
 use ty::relate::{Relate, TypeRelation};
 
-pub struct At<'a, 'gcx: 'tcx, 'tcx: 'a> {
+pub(crate) struct At<'a, 'gcx: 'tcx, 'tcx: 'a> {
     infcx: &'a InferCtxt<'a, 'gcx, 'tcx>,
     cause: &'a ObligationCause<'tcx>,
     param_env: ty::ParamEnv<'tcx>,
 }
 
-pub struct Trace<'a, 'gcx: 'tcx, 'tcx: 'a> {
+pub(crate) struct Trace<'a, 'gcx: 'tcx, 'tcx: 'a> {
     at: At<'a, 'gcx, 'tcx>,
     a_is_expected: bool,
     trace: TypeTrace<'tcx>,
 }
 
 impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
-    pub fn at(&'a self,
+    pub(crate) fn at(&'a self,
               cause: &'a ObligationCause<'tcx>,
               param_env: ty::ParamEnv<'tcx>)
               -> At<'a, 'gcx, 'tcx>
@@ -61,7 +61,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
     }
 }
 
-pub trait ToTrace<'tcx>: Relate<'tcx> + Copy {
+pub(crate) trait ToTrace<'tcx>: Relate<'tcx> + Copy {
     fn to_trace(cause: &ObligationCause<'tcx>,
                 a_is_expected: bool,
                 a: Self,
@@ -71,7 +71,7 @@ pub trait ToTrace<'tcx>: Relate<'tcx> + Copy {
 
 impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// Hacky routine for equating two impl headers in coherence.
-    pub fn eq_impl_headers(self,
+    pub(crate) fn eq_impl_headers(self,
                            expected: &ty::ImplHeader<'tcx>,
                            actual: &ty::ImplHeader<'tcx>)
                            -> InferResult<'tcx, ()>
@@ -88,7 +88,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     }
 
     /// Make `a <: b` where `a` may or may not be expected
-    pub fn sub_exp<T>(self,
+    pub(crate) fn sub_exp<T>(self,
                       a_is_expected: bool,
                       a: T,
                       b: T)
@@ -102,7 +102,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// call like `foo(x)`, where `foo: fn(i32)`, you might have
     /// `sup(i32, x)`, since the "expected" type is the type that
     /// appears in the signature.
-    pub fn sup<T>(self,
+    pub(crate) fn sup<T>(self,
                   expected: T,
                   actual: T)
                   -> InferResult<'tcx, ()>
@@ -112,7 +112,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     }
 
     /// Make `expected <: actual`
-    pub fn sub<T>(self,
+    pub(crate) fn sub<T>(self,
                   expected: T,
                   actual: T)
                   -> InferResult<'tcx, ()>
@@ -122,7 +122,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     }
 
     /// Make `expected <: actual`
-    pub fn eq_exp<T>(self,
+    pub(crate) fn eq_exp<T>(self,
                      a_is_expected: bool,
                      a: T,
                      b: T)
@@ -133,7 +133,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     }
 
     /// Make `expected <: actual`
-    pub fn eq<T>(self,
+    pub(crate) fn eq<T>(self,
                  expected: T,
                  actual: T)
                  -> InferResult<'tcx, ()>
@@ -147,7 +147,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// this can result in an error (e.g., if asked to compute LUB of
     /// u32 and i32), it is meaningful to call one of them the
     /// "expected type".
-    pub fn lub<T>(self,
+    pub(crate) fn lub<T>(self,
                   expected: T,
                   actual: T)
                   -> InferResult<'tcx, T>
@@ -159,7 +159,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// Compute the greatest-lower-bound, or mutual subtype, of two
     /// values. As with `lub` order doesn't matter, except for error
     /// cases.
-    pub fn glb<T>(self,
+    pub(crate) fn glb<T>(self,
                   expected: T,
                   actual: T)
                   -> InferResult<'tcx, T>
@@ -172,7 +172,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// error-reporting, but doesn't actually perform any operation
     /// yet (this is useful when you want to set the trace using
     /// distinct values from those you wish to operate upon).
-    pub fn trace<T>(self,
+    pub(crate) fn trace<T>(self,
                     expected: T,
                     actual: T)
                     -> Trace<'a, 'gcx, 'tcx>
@@ -184,7 +184,7 @@ impl<'a, 'gcx, 'tcx> At<'a, 'gcx, 'tcx> {
     /// Like `trace`, but the expected value is determined by the
     /// boolean argument (if true, then the first argument `a` is the
     /// "expected" value).
-    pub fn trace_exp<T>(self,
+    pub(crate) fn trace_exp<T>(self,
                         a_is_expected: bool,
                         a: T,
                         b: T)
@@ -200,7 +200,7 @@ impl<'a, 'gcx, 'tcx> Trace<'a, 'gcx, 'tcx> {
     /// Make `a <: b` where `a` may or may not be expected (if
     /// `a_is_expected` is true, then `a` is expected).
     /// Make `expected <: actual`
-    pub fn sub<T>(self,
+    pub(crate) fn sub<T>(self,
                   a: &T,
                   b: &T)
                   -> InferResult<'tcx, ()>
@@ -218,7 +218,7 @@ impl<'a, 'gcx, 'tcx> Trace<'a, 'gcx, 'tcx> {
 
     /// Make `a == b`; the expectation is set by the call to
     /// `trace()`.
-    pub fn eq<T>(self,
+    pub(crate) fn eq<T>(self,
                  a: &T,
                  b: &T)
                  -> InferResult<'tcx, ()>
@@ -234,7 +234,7 @@ impl<'a, 'gcx, 'tcx> Trace<'a, 'gcx, 'tcx> {
         })
     }
 
-    pub fn lub<T>(self,
+    pub(crate) fn lub<T>(self,
                   a: &T,
                   b: &T)
                   -> InferResult<'tcx, T>
@@ -250,7 +250,7 @@ impl<'a, 'gcx, 'tcx> Trace<'a, 'gcx, 'tcx> {
         })
     }
 
-    pub fn glb<T>(self,
+    pub(crate) fn glb<T>(self,
                   a: &T,
                   b: &T)
                   -> InferResult<'tcx, T>

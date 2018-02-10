@@ -114,7 +114,7 @@ const SCOPE_DATA_DESTRUCTION: u32 = !3;
 const SCOPE_DATA_REMAINDER_MAX: u32 = !4;
 
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug, Copy, RustcEncodable, RustcDecodable)]
-pub enum ScopeData {
+pub(crate) enum ScopeData {
     Node(hir::ItemLocalId),
 
     // Scope of the call-site for a function or closure
@@ -151,9 +151,9 @@ pub enum ScopeData {
 ///   and thus does not include EXPR_2, but covers the `...`.
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash, RustcEncodable,
          RustcDecodable, Debug, Copy)]
-pub struct BlockRemainder {
-    pub block: hir::ItemLocalId,
-    pub first_statement_index: FirstStatementIndex,
+pub(crate) struct BlockRemainder {
+    pub(crate) block: hir::ItemLocalId,
+    pub(crate) first_statement_index: FirstStatementIndex,
 }
 
 newtype_index!(FirstStatementIndex
@@ -185,7 +185,7 @@ impl fmt::Debug for Scope {
 #[allow(non_snake_case)]
 impl Scope {
     #[inline]
-    pub fn data(self) -> ScopeData {
+    pub(crate) fn data(self) -> ScopeData {
         match self.code {
             SCOPE_DATA_NODE => ScopeData::Node(self.id),
             SCOPE_DATA_CALLSITE => ScopeData::CallSite(self.id),
@@ -199,27 +199,27 @@ impl Scope {
     }
 
     #[inline]
-    pub fn Node(id: hir::ItemLocalId) -> Self {
+    pub(crate) fn Node(id: hir::ItemLocalId) -> Self {
         Self::from(ScopeData::Node(id))
     }
 
     #[inline]
-    pub fn CallSite(id: hir::ItemLocalId) -> Self {
+    pub(crate) fn CallSite(id: hir::ItemLocalId) -> Self {
         Self::from(ScopeData::CallSite(id))
     }
 
     #[inline]
-    pub fn Arguments(id: hir::ItemLocalId) -> Self {
+    pub(crate) fn Arguments(id: hir::ItemLocalId) -> Self {
         Self::from(ScopeData::Arguments(id))
     }
 
     #[inline]
-    pub fn Destruction(id: hir::ItemLocalId) -> Self {
+    pub(crate) fn Destruction(id: hir::ItemLocalId) -> Self {
         Self::from(ScopeData::Destruction(id))
     }
 
     #[inline]
-    pub fn Remainder(r: BlockRemainder) -> Self {
+    pub(crate) fn Remainder(r: BlockRemainder) -> Self {
         Self::from(ScopeData::Remainder(r))
     }
 }
@@ -229,11 +229,11 @@ impl Scope {
     ///
     /// NB: likely to be replaced as API is refined; e.g. pnkfelix
     /// anticipates `fn entry_node_id` and `fn each_exit_node_id`.
-    pub fn item_local_id(&self) -> hir::ItemLocalId {
+    pub(crate) fn item_local_id(&self) -> hir::ItemLocalId {
         self.id
     }
 
-    pub fn node_id(&self, tcx: TyCtxt, scope_tree: &ScopeTree) -> ast::NodeId {
+    pub(crate) fn node_id(&self, tcx: TyCtxt, scope_tree: &ScopeTree) -> ast::NodeId {
         match scope_tree.root_body {
             Some(hir_id) => {
                 tcx.hir.hir_to_node_id(hir::HirId {
@@ -248,7 +248,7 @@ impl Scope {
     /// Returns the span of this Scope.  Note that in general the
     /// returned span may not correspond to the span of any node id in
     /// the AST.
-    pub fn span(&self, tcx: TyCtxt, scope_tree: &ScopeTree) -> Span {
+    pub(crate) fn span(&self, tcx: TyCtxt, scope_tree: &ScopeTree) -> Span {
         let node_id = self.node_id(tcx, scope_tree);
         if node_id == ast::DUMMY_NODE_ID {
             return DUMMY_SP;
@@ -279,7 +279,7 @@ impl Scope {
 
 /// The region scope tree encodes information about region relationships.
 #[derive(Default, Debug)]
-pub struct ScopeTree {
+pub(crate) struct ScopeTree {
     /// If not empty, this body is the root of this region hierarchy.
     root_body: Option<hir::HirId>,
 
@@ -403,7 +403,7 @@ pub struct ScopeTree {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Context {
+pub(crate) struct Context {
     /// the root of the current region tree. This is typically the id
     /// of the innermost fn body. Each fn forms its own disjoint tree
     /// in the region hierarchy. These fn bodies are themselves
@@ -496,7 +496,7 @@ impl<'tcx> Visitor<'tcx> for ExprLocatorVisitor {
 }
 
 impl<'tcx> ScopeTree {
-    pub fn record_scope_parent(&mut self, child: Scope, parent: Option<Scope>) {
+    pub(crate) fn record_scope_parent(&mut self, child: Scope, parent: Option<Scope>) {
         debug!("{:?}.parent = {:?}", child, parent);
 
         if let Some(p) = parent {
@@ -510,19 +510,19 @@ impl<'tcx> ScopeTree {
         }
     }
 
-    pub fn each_encl_scope<E>(&self, mut e:E) where E: FnMut(Scope, Scope) {
+    pub(crate) fn each_encl_scope<E>(&self, mut e:E) where E: FnMut(Scope, Scope) {
         for (&child, &parent) in &self.parent_map {
             e(child, parent)
         }
     }
 
-    pub fn each_var_scope<E>(&self, mut e:E) where E: FnMut(&hir::ItemLocalId, Scope) {
+    pub(crate) fn each_var_scope<E>(&self, mut e:E) where E: FnMut(&hir::ItemLocalId, Scope) {
         for (child, &parent) in self.var_map.iter() {
             e(child, parent)
         }
     }
 
-    pub fn opt_destruction_scope(&self, n: hir::ItemLocalId) -> Option<Scope> {
+    pub(crate) fn opt_destruction_scope(&self, n: hir::ItemLocalId) -> Option<Scope> {
         self.destruction_scopes.get(&n).cloned()
     }
 
@@ -565,26 +565,26 @@ impl<'tcx> ScopeTree {
         self.rvalue_scopes.insert(var, lifetime);
     }
 
-    pub fn opt_encl_scope(&self, id: Scope) -> Option<Scope> {
+    pub(crate) fn opt_encl_scope(&self, id: Scope) -> Option<Scope> {
         //! Returns the narrowest scope that encloses `id`, if any.
         self.parent_map.get(&id).cloned()
     }
 
     #[allow(dead_code)] // used in cfg
-    pub fn encl_scope(&self, id: Scope) -> Scope {
+    pub(crate) fn encl_scope(&self, id: Scope) -> Scope {
         //! Returns the narrowest scope that encloses `id`, if any.
         self.opt_encl_scope(id).unwrap()
     }
 
     /// Returns the lifetime of the local variable `var_id`
-    pub fn var_scope(&self, var_id: hir::ItemLocalId) -> Scope {
+    pub(crate) fn var_scope(&self, var_id: hir::ItemLocalId) -> Scope {
         match self.var_map.get(&var_id) {
             Some(&r) => r,
             None => { bug!("no enclosing scope for id {:?}", var_id); }
         }
     }
 
-    pub fn temporary_scope(&self, expr_id: hir::ItemLocalId) -> Option<Scope> {
+    pub(crate) fn temporary_scope(&self, expr_id: hir::ItemLocalId) -> Option<Scope> {
         //! Returns the scope when temp created by expr_id will be cleaned up
 
         // check for a designated rvalue scope
@@ -614,7 +614,7 @@ impl<'tcx> ScopeTree {
         return None;
     }
 
-    pub fn var_region(&self, id: hir::ItemLocalId) -> ty::RegionKind {
+    pub(crate) fn var_region(&self, id: hir::ItemLocalId) -> ty::RegionKind {
         //! Returns the lifetime of the variable `id`.
 
         let scope = ty::ReScope(self.var_scope(id));
@@ -622,7 +622,7 @@ impl<'tcx> ScopeTree {
         scope
     }
 
-    pub fn scopes_intersect(&self, scope1: Scope, scope2: Scope)
+    pub(crate) fn scopes_intersect(&self, scope1: Scope, scope2: Scope)
                             -> bool {
         self.is_subscope_of(scope1, scope2) ||
         self.is_subscope_of(scope2, scope1)
@@ -630,7 +630,7 @@ impl<'tcx> ScopeTree {
 
     /// Returns true if `subscope` is equal to or is lexically nested inside `superscope` and false
     /// otherwise.
-    pub fn is_subscope_of(&self,
+    pub(crate) fn is_subscope_of(&self,
                           subscope: Scope,
                           superscope: Scope)
                           -> bool {
@@ -654,7 +654,7 @@ impl<'tcx> ScopeTree {
     }
 
     /// Returns the id of the innermost containing body
-    pub fn containing_body(&self, mut scope: Scope)-> Option<hir::ItemLocalId> {
+    pub(crate) fn containing_body(&self, mut scope: Scope)-> Option<hir::ItemLocalId> {
         loop {
             if let ScopeData::CallSite(id) = scope.data() {
                 return Some(id);
@@ -669,7 +669,7 @@ impl<'tcx> ScopeTree {
 
     /// Finds the nearest common ancestor (if any) of two scopes.  That is, finds the smallest
     /// scope which is greater than or equal to both `scope_a` and `scope_b`.
-    pub fn nearest_common_ancestor(&self,
+    pub(crate) fn nearest_common_ancestor(&self,
                                    scope_a: Scope,
                                    scope_b: Scope)
                                    -> Scope {
@@ -770,7 +770,7 @@ impl<'tcx> ScopeTree {
 
     /// Assuming that the provided region was defined within this `ScopeTree`,
     /// returns the outermost `Scope` that the region outlives.
-    pub fn early_free_scope<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
+    pub(crate) fn early_free_scope<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>,
                                        br: &ty::EarlyBoundRegion)
                                        -> Scope {
         let param_owner = tcx.parent_def_id(br.def_id).unwrap();
@@ -798,7 +798,7 @@ impl<'tcx> ScopeTree {
 
     /// Assuming that the provided region was defined within this `ScopeTree`,
     /// returns the outermost `Scope` that the region outlives.
-    pub fn free_scope<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, fr: &ty::FreeRegion)
+    pub(crate) fn free_scope<'a, 'gcx>(&self, tcx: TyCtxt<'a, 'gcx, 'tcx>, fr: &ty::FreeRegion)
                                  -> Scope {
         let param_owner = match fr.bound_region {
             ty::BoundRegion::BrNamed(def_id, _) => {
@@ -820,14 +820,14 @@ impl<'tcx> ScopeTree {
     /// returns `Some((span, expr_count))` with the span of a yield we found and
     /// the number of expressions and patterns appearing before the `yield` in the body + 1.
     /// If there a are multiple yields in a scope, the one with the highest number is returned.
-    pub fn yield_in_scope(&self, scope: Scope) -> Option<(Span, usize)> {
+    pub(crate) fn yield_in_scope(&self, scope: Scope) -> Option<(Span, usize)> {
         self.yield_in_scope.get(&scope).cloned()
     }
 
     /// Checks whether the given scope contains a `yield` and if that yield could execute
     /// after `expr`. If so, it returns the span of that `yield`.
     /// `scope` must be inside the body.
-    pub fn yield_in_scope_for_expr(&self,
+    pub(crate) fn yield_in_scope_for_expr(&self,
                                    scope: Scope,
                                    expr: ast::NodeId,
                                    body: &'tcx hir::Body) -> Option<Span> {
@@ -849,7 +849,7 @@ impl<'tcx> ScopeTree {
     /// Gives the number of expressions visited in a body.
     /// Used to sanity check visit_expr call count when
     /// calculating generator interiors.
-    pub fn body_expr_count(&self, body_id: hir::BodyId) -> Option<usize> {
+    pub(crate) fn body_expr_count(&self, body_id: hir::BodyId) -> Option<usize> {
         self.body_expr_count.get(&body_id).map(|r| *r)
     }
 }
@@ -1481,7 +1481,7 @@ fn region_scope_tree<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, def_id: DefId)
     Rc::new(scope_tree)
 }
 
-pub fn provide(providers: &mut Providers) {
+pub(crate) fn provide(providers: &mut Providers) {
     *providers = Providers {
         region_scope_tree,
         ..*providers

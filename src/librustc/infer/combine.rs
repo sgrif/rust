@@ -51,21 +51,21 @@ use syntax::ast;
 use syntax_pos::Span;
 
 #[derive(Clone)]
-pub struct CombineFields<'infcx, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
-    pub infcx: &'infcx InferCtxt<'infcx, 'gcx, 'tcx>,
-    pub trace: TypeTrace<'tcx>,
-    pub cause: Option<ty::relate::Cause>,
-    pub param_env: ty::ParamEnv<'tcx>,
-    pub obligations: PredicateObligations<'tcx>,
+pub(crate) struct CombineFields<'infcx, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
+    pub(crate) infcx: &'infcx InferCtxt<'infcx, 'gcx, 'tcx>,
+    pub(crate) trace: TypeTrace<'tcx>,
+    pub(crate) cause: Option<ty::relate::Cause>,
+    pub(crate) param_env: ty::ParamEnv<'tcx>,
+    pub(crate) obligations: PredicateObligations<'tcx>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum RelationDir {
+pub(crate) enum RelationDir {
     SubtypeOf, SupertypeOf, EqTo
 }
 
 impl<'infcx, 'gcx, 'tcx> InferCtxt<'infcx, 'gcx, 'tcx> {
-    pub fn super_combine_tys<R>(&self,
+    pub(crate) fn super_combine_tys<R>(&self,
                                 relation: &mut R,
                                 a: Ty<'tcx>,
                                 b: Ty<'tcx>)
@@ -155,23 +155,23 @@ impl<'infcx, 'gcx, 'tcx> InferCtxt<'infcx, 'gcx, 'tcx> {
 }
 
 impl<'infcx, 'gcx, 'tcx> CombineFields<'infcx, 'gcx, 'tcx> {
-    pub fn tcx(&self) -> TyCtxt<'infcx, 'gcx, 'tcx> {
+    pub(crate) fn tcx(&self) -> TyCtxt<'infcx, 'gcx, 'tcx> {
         self.infcx.tcx
     }
 
-    pub fn equate<'a>(&'a mut self, a_is_expected: bool) -> Equate<'a, 'infcx, 'gcx, 'tcx> {
+    pub(crate) fn equate<'a>(&'a mut self, a_is_expected: bool) -> Equate<'a, 'infcx, 'gcx, 'tcx> {
         Equate::new(self, a_is_expected)
     }
 
-    pub fn sub<'a>(&'a mut self, a_is_expected: bool) -> Sub<'a, 'infcx, 'gcx, 'tcx> {
+    pub(crate) fn sub<'a>(&'a mut self, a_is_expected: bool) -> Sub<'a, 'infcx, 'gcx, 'tcx> {
         Sub::new(self, a_is_expected)
     }
 
-    pub fn lub<'a>(&'a mut self, a_is_expected: bool) -> Lub<'a, 'infcx, 'gcx, 'tcx> {
+    pub(crate) fn lub<'a>(&'a mut self, a_is_expected: bool) -> Lub<'a, 'infcx, 'gcx, 'tcx> {
         Lub::new(self, a_is_expected)
     }
 
-    pub fn glb<'a>(&'a mut self, a_is_expected: bool) -> Glb<'a, 'infcx, 'gcx, 'tcx> {
+    pub(crate) fn glb<'a>(&'a mut self, a_is_expected: bool) -> Glb<'a, 'infcx, 'gcx, 'tcx> {
         Glb::new(self, a_is_expected)
     }
 
@@ -184,7 +184,7 @@ impl<'infcx, 'gcx, 'tcx> CombineFields<'infcx, 'gcx, 'tcx> {
     /// will first instantiate `b_vid` with a *generalized* version
     /// of `a_ty`. Generalization introduces other inference
     /// variables wherever subtyping could occur.
-    pub fn instantiate(&mut self,
+    pub(crate) fn instantiate(&mut self,
                        a_ty: Ty<'tcx>,
                        dir: RelationDir,
                        b_vid: ty::TyVid,
@@ -491,7 +491,7 @@ impl<'cx, 'gcx, 'tcx> TypeRelation<'cx, 'gcx, 'tcx> for Generalizer<'cx, 'gcx, '
     }
 }
 
-pub trait RelateResultCompare<'tcx, T> {
+pub(crate) trait RelateResultCompare<'tcx, T> {
     fn compare<F>(&self, t: T, f: F) -> RelateResult<'tcx, T> where
         F: FnOnce() -> TypeError<'tcx>;
 }

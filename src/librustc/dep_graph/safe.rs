@@ -20,7 +20,7 @@ use ty::TyCtxt;
 /// only be implemented for things like the tcx as well as various id
 /// types, which will create reads in the dep-graph whenever the trait
 /// loads anything that might depend on the input program.
-pub trait DepGraphSafe {
+pub(crate) trait DepGraphSafe {
 }
 
 /// A `BodyId` on its own doesn't give access to any particular state.
@@ -72,7 +72,7 @@ impl DepGraphSafe for () {
 /// A convenient override that lets you pass arbitrary state into a
 /// task. Every use should be accompanied by a comment explaining why
 /// it makes sense (or how it could be refactored away in the future).
-pub struct AssertDepGraphSafe<T>(pub T);
+pub(crate) struct AssertDepGraphSafe<T>(pub(crate) T);
 
 impl<T> DepGraphSafe for AssertDepGraphSafe<T> {
 }

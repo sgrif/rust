@@ -22,14 +22,14 @@ use syntax_pos::Span;
 #[derive(Debug)]
 pub(super) struct AnonymousArgInfo<'tcx> {
     // the argument corresponding to the anonymous region
-    pub arg: &'tcx hir::Arg,
+    pub(crate) arg: &'tcx hir::Arg,
     // the type corresponding to the anonymopus region argument
-    pub arg_ty: Ty<'tcx>,
+    pub(crate) arg_ty: Ty<'tcx>,
     // the ty::BoundRegion corresponding to the anonymous region
-    pub bound_region: ty::BoundRegion,
+    pub(crate) bound_region: ty::BoundRegion,
     // corresponds to id the argument is the first parameter
     // in the declaration
-    pub is_first: bool,
+    pub(crate) is_first: bool,
 }
 
 // This struct contains information regarding the
@@ -37,11 +37,11 @@ pub(super) struct AnonymousArgInfo<'tcx> {
 #[derive(Debug)]
 pub(super) struct FreeRegionInfo {
     // def id corresponding to FreeRegion
-    pub def_id: DefId,
+    pub(crate) def_id: DefId,
     // the bound region corresponding to FreeRegion
-    pub boundregion: ty::BoundRegion,
+    pub(crate) boundregion: ty::BoundRegion,
     // checks if bound region is in Impl Item
-    pub is_impl_item: bool,
+    pub(crate) is_impl_item: bool,
 }
 
 impl<'a, 'gcx, 'tcx> NiceRegionError<'a, 'gcx, 'tcx> {

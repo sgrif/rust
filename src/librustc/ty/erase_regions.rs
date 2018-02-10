@@ -28,7 +28,7 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     /// Returns an equivalent value with all free regions removed (note
     /// that late-bound regions remain, because they are important for
     /// subtyping, but they are anonymized and normalized as well)..
-    pub fn erase_regions<T>(self, value: &T) -> T
+    pub(crate) fn erase_regions<T>(self, value: &T) -> T
         where T : TypeFoldable<'tcx>
     {
         let value1 = value.fold_with(&mut RegionEraserVisitor { tcx: self });

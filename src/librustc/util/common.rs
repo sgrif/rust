@@ -25,12 +25,12 @@ use ty::maps::{QueryMsg};
 use dep_graph::{DepNode};
 
 // The name of the associated type for `Fn` return types
-pub const FN_OUTPUT_NAME: &'static str = "Output";
+pub(crate) const FN_OUTPUT_NAME: &'static str = "Output";
 
 // Useful type to use with `Result<>` indicate that an error has already
 // been reported to the user, so no need to continue checking.
 #[derive(Clone, Copy, Debug, RustcEncodable, RustcDecodable)]
-pub struct ErrorReported;
+pub(crate) struct ErrorReported;
 
 thread_local!(static TIME_DEPTH: Cell<usize> = Cell::new(0));
 
@@ -39,19 +39,19 @@ thread_local!(static PROFQ_CHAN: RefCell<Option<Sender<ProfileQueriesMsg>>> = Re
 
 /// Parameters to the `Dump` variant of type `ProfileQueriesMsg`.
 #[derive(Clone,Debug)]
-pub struct ProfQDumpParams {
+pub(crate) struct ProfQDumpParams {
     /// A base path for the files we will dump
-    pub path:String,
+    pub(crate) path:String,
     /// To ensure that the compiler waits for us to finish our dumps
-    pub ack:Sender<()>,
+    pub(crate) ack:Sender<()>,
     /// toggle dumping a log file with every `ProfileQueriesMsg`
-    pub dump_profq_msg_log:bool,
+    pub(crate) dump_profq_msg_log:bool,
 }
 
 /// A sequence of these messages induce a trace of query-based incremental compilation.
 /// FIXME(matthewhammer): Determine whether we should include cycle detection here or not.
 #[derive(Clone,Debug)]
-pub enum ProfileQueriesMsg {
+pub(crate) enum ProfileQueriesMsg {
     /// begin a timed pass
     TimeBegin(String),
     /// end a timed pass
@@ -76,7 +76,7 @@ pub enum ProfileQueriesMsg {
 }
 
 /// If enabled, send a message to the profile-queries thread
-pub fn profq_msg(msg: ProfileQueriesMsg) {
+pub(crate) fn profq_msg(msg: ProfileQueriesMsg) {
     PROFQ_CHAN.with(|sender|{
         if let Some(s) = sender.borrow().as_ref() {
             s.send(msg).unwrap()
@@ -92,7 +92,7 @@ pub fn profq_msg(msg: ProfileQueriesMsg) {
 }
 
 /// Set channel for profile queries channel
-pub fn profq_set_chan(s: Sender<ProfileQueriesMsg>) -> bool {
+pub(crate) fn profq_set_chan(s: Sender<ProfileQueriesMsg>) -> bool {
     PROFQ_CHAN.with(|chan|{
         if chan.borrow().is_none() {
             *chan.borrow_mut() = Some(s);
@@ -103,18 +103,18 @@ pub fn profq_set_chan(s: Sender<ProfileQueriesMsg>) -> bool {
 
 /// Read the current depth of `time()` calls. This is used to
 /// encourage indentation across threads.
-pub fn time_depth() -> usize {
+pub(crate) fn time_depth() -> usize {
     TIME_DEPTH.with(|slot| slot.get())
 }
 
 /// Set the current depth of `time()` calls. The idea is to call
 /// `set_time_depth()` with the result from `time_depth()` in the
 /// parent thread.
-pub fn set_time_depth(depth: usize) {
+pub(crate) fn set_time_depth(depth: usize) {
     TIME_DEPTH.with(|slot| slot.set(depth));
 }
 
-pub fn time<T, F>(do_it: bool, what: &str, f: F) -> T where
+pub(crate) fn time<T, F>(do_it: bool, what: &str, f: F) -> T where
     F: FnOnce() -> T,
 {
     if !do_it { return f(); }
@@ -142,7 +142,7 @@ pub fn time<T, F>(do_it: bool, what: &str, f: F) -> T where
     rv
 }
 
-pub fn print_time_passes_entry(do_it: bool, what: &str, dur: Duration) {
+pub(crate) fn print_time_passes_entry(do_it: bool, what: &str, dur: Duration) {
     if !do_it {
         return
     }
@@ -177,7 +177,7 @@ fn print_time_passes_entry_internal(what: &str, dur: Duration) {
 
 // Hack up our own formatting for the duration to make it easier for scripts
 // to parse (always use the same number of decimal places and the same unit).
-pub fn duration_to_secs_str(dur: Duration) -> String {
+pub(crate) fn duration_to_secs_str(dur: Duration) -> String {
     const NANOS_PER_SEC: f64 = 1_000_000_000.0;
     let secs = dur.as_secs() as f64 +
                dur.subsec_nanos() as f64 / NANOS_PER_SEC;
@@ -185,7 +185,7 @@ pub fn duration_to_secs_str(dur: Duration) -> String {
     format!("{:.3}", secs)
 }
 
-pub fn to_readable_str(mut val: usize) -> String {
+pub(crate) fn to_readable_str(mut val: usize) -> String {
     let mut groups = vec![];
     loop {
         let group = val % 1000;
@@ -205,7 +205,7 @@ pub fn to_readable_str(mut val: usize) -> String {
     groups.join("_")
 }
 
-pub fn record_time<T, F>(accu: &Cell<Duration>, f: F) -> T where
+pub(crate) fn record_time<T, F>(accu: &Cell<Duration>, f: F) -> T where
     F: FnOnce() -> T,
 {
     let start = Instant::now();
@@ -264,7 +264,7 @@ fn get_resident() -> Option<usize> {
     }
 }
 
-pub fn indent<R, F>(op: F) -> R where
+pub(crate) fn indent<R, F>(op: F) -> R where
     R: Debug,
     F: FnOnce() -> R,
 {
@@ -276,7 +276,7 @@ pub fn indent<R, F>(op: F) -> R where
     r
 }
 
-pub struct Indenter {
+pub(crate) struct Indenter {
     _cannot_construct_outside_of_this_module: (),
 }
 
@@ -284,12 +284,12 @@ impl Drop for Indenter {
     fn drop(&mut self) { debug!("<<"); }
 }
 
-pub fn indenter() -> Indenter {
+pub(crate) fn indenter() -> Indenter {
     debug!(">>");
     Indenter { _cannot_construct_outside_of_this_module: () }
 }
 
-pub trait MemoizationMap {
+pub(crate) trait MemoizationMap {
     type Key: Clone;
     type Value: Clone;
 
@@ -326,14 +326,14 @@ impl<K, V, S> MemoizationMap for RefCell<HashMap<K,V,S>>
 }
 
 #[cfg(unix)]
-pub fn path2cstr(p: &Path) -> CString {
+pub(crate) fn path2cstr(p: &Path) -> CString {
     use std::os::unix::prelude::*;
     use std::ffi::OsStr;
     let p: &OsStr = p.as_ref();
     CString::new(p.as_bytes()).unwrap()
 }
 #[cfg(windows)]
-pub fn path2cstr(p: &Path) -> CString {
+pub(crate) fn path2cstr(p: &Path) -> CString {
     CString::new(p.to_str().unwrap()).unwrap()
 }
 
